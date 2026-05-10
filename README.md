@@ -40,3 +40,6 @@ Copy the example config file:
 
 ```bash
 cp firmware/homestatus-mini/wifi_config.example.h firmware/homestatus-mini/wifi_config.h
+
+```Windows PowerShell
+Copy-Item firmware/homestatus-mini/wifi_config.example.h firmware/homestatus-mini/wifi_config.h
