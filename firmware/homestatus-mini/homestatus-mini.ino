@@ -23,6 +23,11 @@ const int GREEN_PIN = 25;
 const int RED_PIN   = 26;
 const int BLUE_PIN  = 27;
 
+const char* DEVICE_NAME = "homestatus-mini";
+
+const unsigned long WIFI_CHECK_INTERVAL_MS = 10000;
+unsigned long lastWifiCheckMs = 0;
+
 enum StatusLevel {
   STATUS_OK,
   STATUS_WARNING,
@@ -78,6 +83,10 @@ String statusLevelToString(StatusLevel level);
 String escapeJson(String value);
 String escapeHtml(String value);
 
+void handleHealth();
+void handleReboot();
+void checkWifiConnection();
+
 void printHelp();
 
 void setup() {
@@ -112,6 +121,7 @@ void loop() {
   handleButton();
   handleSerial();
   server.handleClient();
+  checkWifiConnection();
 }
 
 void connectToWifi() {
@@ -155,10 +165,14 @@ void setupHttpRoutes() {
   server.on("/", HTTP_GET, handleRoot);
   server.on("/status", HTTP_GET, handleStatusJson);
 
+  server.on("/health", HTTP_GET, handleHealth);
+  server.on("/reboot", HTTP_GET, handleReboot);
+
   server.on("/ok", HTTP_GET, []() {
     setStatus(STATUS_OK, "HOME", "All Good", "No alerts");
     sendPlain("OK state set");
   });
+
 
   server.on("/clear", HTTP_GET, []() {
     setStatus(STATUS_OK, "HOME", "All Good", "No alerts");
@@ -332,6 +346,67 @@ void handleSerial() {
     } else {
       serialBuffer += c;
     }
+  }
+}
+
+void handleHealth() {
+  String json = "";
+
+  json += "{";
+  json += "\"device\":\"" + String(DEVICE_NAME) + "\",";
+  json += "\"status\":\"ok\",";
+  json += "\"wifiConnected\":";
+  json += WiFi.status() == WL_CONNECTED ? "true" : "false";
+  json += ",";
+  json += "\"ip\":\"" + WiFi.localIP().toString() + "\",";
+  json += "\"level\":\"" + statusLevelToString(currentStatus.level) + "\",";
+  json += "\"uptimeMs\":";
+  json += String(millis());
+  json += "}";
+
+  server.send(200, "application/json", json);
+}
+
+void handleReboot() {
+  server.send(200, "text/plain", "Rebooting HomeStatus Mini...");
+  delay(500);
+  ESP.restart();
+}
+
+void checkWifiConnection() {
+  unsigned long now = millis();
+
+  if (now - lastWifiCheckMs < WIFI_CHECK_INTERVAL_MS) {
+    return;
+  }
+
+  lastWifiCheckMs = now;
+
+  if (WiFi.status() == WL_CONNECTED) {
+    return;
+  }
+
+  Serial.println("Wi-Fi disconnected. Attempting reconnect...");
+
+  WiFi.disconnect();
+  delay(100);
+  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+
+  int attempts = 0;
+
+  while (WiFi.status() != WL_CONNECTED && attempts < 20) {
+    delay(250);
+    Serial.print(".");
+    attempts++;
+  }
+
+  Serial.println();
+
+  if (WiFi.status() == WL_CONNECTED) {
+    Serial.print("Wi-Fi reconnected. IP address: ");
+    Serial.println(WiFi.localIP());
+  } else {
+    Serial.println("Wi-Fi reconnect failed.");
   }
 }
 
