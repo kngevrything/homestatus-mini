@@ -1,33 +1,97 @@
+bool requireApiKey() {
+  if (hasValidApiKey()) {
+    return true;
+  }
+
+  server.send(401, "text/plain", "Unauthorized. Missing or invalid API key.");
+  return false;
+}
+
+bool hasValidApiKey() {
+  if (!server.hasArg("key")) {
+    return false;
+  }
+
+  String providedKey = server.arg("key");
+
+  if (providedKey.length() == 0) {
+    return false;
+  }
+
+  return providedKey == String(API_KEY);
+}
+
+String limitedTextArg(const String& name, const String& fallback, int maxLength) {
+  if (!server.hasArg(name)) {
+    return fallback;
+  }
+
+  return limitText(server.arg(name), maxLength);
+}
+
+String limitText(String value, int maxLength) {
+  value.trim();
+
+  if (value.length() <= maxLength) {
+    return value;
+  }
+
+  return value.substring(0, maxLength);
+}
+
 void setupHttpRoutes() {
   server.on("/", HTTP_GET, handleRoot);
   server.on("/status", HTTP_GET, handleStatusJson);
   server.on("/health", HTTP_GET, handleHealth);
   server.on("/reboot", HTTP_GET, handleReboot);
 
+ 
+  
   server.on("/ok", HTTP_GET, []() {
+    if (!requireApiKey()) {
+      return;
+    }
+
     setDefaultOk();
     sendPlain("OK state set");
   });
 
   server.on("/clear", HTTP_GET, []() {
+    if (!requireApiKey()) {
+      return;
+    }
+
     setDefaultOk();
     sendPlain("Status cleared");
   });
 
   server.on("/warning", HTTP_GET, []() {
+    if (!requireApiKey()) {
+      return;
+    }
+
     setDefaultWarning();
     sendPlain("Warning state set");
   });
 
   server.on("/alert", HTTP_GET, []() {
+    if (!requireApiKey()) {
+      return;
+    }
+
     setDefaultAlert();
     sendPlain("Alert state set");
   });
 
   server.on("/info", HTTP_GET, []() {
+    if (!requireApiKey()) {
+      return;
+    }
+
     setDefaultInfo();
     sendPlain("Info state set");
   });
+
 
   server.on("/set", HTTP_GET, handleSetFromHttp);
 
@@ -63,6 +127,15 @@ void handleRoot() {
   html += "<p><strong>Main:</strong> " + escapeHtml(currentStatus.mainText) + "</p>";
   html += "<p><strong>Footer:</strong> " + escapeHtml(currentStatus.footer) + "</p>";
   html += "<p><strong>IP:</strong> " + WiFi.localIP().toString() + "</p>";
+
+  html += "<h2>Quick Actions</h2>";
+  html += "<p>State-changing routes require <code>?key=YOUR_API_KEY</code>.</p>";
+  html += "<code>/alert?key=YOUR_API_KEY</code><br>";
+  html += "<code>/clear?key=YOUR_API_KEY</code><br>";
+
+  html += "<h2>Read-Only Routes</h2>";
+  html += "<a href=\"/status\">Status JSON</a>";
+  html += "<a href=\"/health\">Health</a>";
 
   html += "<h2>Quick Actions</h2>";
   html += "<a href=\"/ok\">OK</a>";
@@ -122,21 +195,29 @@ void handleHealth() {
 }
 
 void handleReboot() {
+  if (!requireApiKey()) {
+    return;
+  }
+
   server.send(200, "text/plain", "Rebooting HomeStatus Mini...");
   delay(500);
   ESP.restart();
 }
 
 void handleSetFromHttp() {
+  if (!requireApiKey()) {
+    return;
+  }
+
   if (!server.hasArg("level")) {
     server.send(400, "text/plain", "Missing required query parameter: level");
     return;
   }
 
-  String levelText = server.arg("level");
-  String title = server.hasArg("title") ? server.arg("title") : "HOME";
-  String mainText = server.hasArg("main") ? server.arg("main") : "Updated";
-  String footer = server.hasArg("footer") ? server.arg("footer") : "HTTP";
+  String levelText = limitText(server.arg("level"), 16);
+  String title = limitedTextArg("title", "HOME", 12);
+  String mainText = limitedTextArg("main", "Updated", 18);
+  String footer = limitedTextArg("footer", "HTTP", 18);
 
   StatusLevel level;
 

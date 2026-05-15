@@ -3,8 +3,23 @@
 #include <WebServer.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
-
 #include "wifi_config.h"
+
+
+void setupHttpRoutes();
+void handleRoot();
+void handleStatusJson();
+void handleHealth();
+void handleReboot();
+void handleSetFromHttp();
+void sendPlain(String message);
+
+bool requireApiKey();
+bool hasValidApiKey();
+String limitedTextArg(const String& name, const String& fallback, int maxLength);
+String limitText(String value, int maxLength);
+
+
 
 const int SCREEN_WIDTH = 128;
 const int SCREEN_HEIGHT = 64;
