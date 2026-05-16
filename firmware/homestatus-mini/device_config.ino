@@ -8,6 +8,13 @@ void loadDeviceConfig() {
     deviceConfig.deviceName = preferences.getString("deviceName", "homestatus-mini");
     deviceConfig.apiKey = preferences.getString("apiKey", "");
 
+    deviceConfig.mqttEnabled = preferences.getBool("mqttEnabled", false);
+    deviceConfig.mqttHost = preferences.getString("mqttHost", "");
+    deviceConfig.mqttPort = preferences.getInt("mqttPort", 1883);
+    deviceConfig.mqttUsername = preferences.getString("mqttUser", "");
+    deviceConfig.mqttPassword = preferences.getString("mqttPass", "");
+    deviceConfig.mqttBaseTopic = preferences.getString("mqttTopic", "homestatus-mini");
+
     preferences.end();
 
     Serial.println("Loaded device config:");
@@ -21,6 +28,16 @@ void loadDeviceConfig() {
     Serial.println(deviceConfig.wifiSSID);
     Serial.print("  Has complete config: ");
     Serial.println(hasCompleteDeviceConfig() ? "Yes" : "No");
+    Serial.print("  MQTT enabled: ");
+    Serial.println(deviceConfig.mqttEnabled ? "Yes" : "No");
+    Serial.print("  MQTT configured: ");
+    Serial.println(hasMqttConfig() ? "Yes" : "No");
+    Serial.print("  MQTT host: ");
+    Serial.println(deviceConfig.mqttHost);
+    Serial.print("  MQTT port: ");
+    Serial.println(deviceConfig.mqttPort);
+    Serial.print("  MQTT base topic: ");
+    Serial.println(deviceConfig.mqttBaseTopic);
 }
 
 void saveDeviceConfig(String ssid, String password, String deviceName, String apiKey) {
@@ -59,16 +76,23 @@ void saveDeviceConfig(String ssid, String password, String deviceName, String ap
 }
 
 void clearDeviceConfig() {
-  preferences.begin(PREFERENCES_NAMESPACE, false);
-  preferences.clear();
-  preferences.end();
+    preferences.begin(PREFERENCES_NAMESPACE, false);
+    preferences.clear();
+    preferences.end();
 
-  deviceConfig.wifiSSID = "";
-  deviceConfig.wifiPassword = "";
-  deviceConfig.deviceName = "homestatus-mini";
-  deviceConfig.apiKey = "";
+    deviceConfig.wifiSSID = "";
+    deviceConfig.wifiPassword = "";
+    deviceConfig.deviceName = "homestatus-mini";
+    deviceConfig.apiKey = "";
 
-  Serial.println("Device config cleared.");
+    deviceConfig.mqttEnabled = false;
+    deviceConfig.mqttHost = "";
+    deviceConfig.mqttPort = 1883;
+    deviceConfig.mqttUsername = "";
+    deviceConfig.mqttPassword = "";
+    deviceConfig.mqttBaseTopic = "homestatus-mini";
+
+    Serial.println("Device config cleared.");
 }
 
 void factoryResetAndReboot() {
@@ -92,6 +116,10 @@ bool hasCompleteDeviceConfig() {
   return hasSavedWifiConfig() && hasSavedApiKey();
 }
 
+bool hasMqttConfig() {
+  return deviceConfig.hasMqttConfig();
+}
+
 String getDeviceName() {
   if (deviceConfig.deviceName.length() > 0) {
     return deviceConfig.deviceName;
@@ -106,4 +134,49 @@ String getApiKey() {
   }
 
   return String(API_KEY);
+}
+
+void saveMqttConfig(bool enabled, String host, int port, String username, String password, String baseTopic) {
+  host.trim();
+  username.trim();
+  password.trim();
+  baseTopic.trim();
+
+  if (port <= 0) {
+    port = 1883;
+  }
+
+  if (baseTopic.length() == 0) {
+    baseTopic = getDeviceName();
+  }
+
+  preferences.begin(PREFERENCES_NAMESPACE, false);
+
+  preferences.putBool("mqttEnabled", enabled);
+  preferences.putString("mqttHost", host);
+  preferences.putInt("mqttPort", port);
+  preferences.putString("mqttUser", username);
+  preferences.putString("mqttPass", password);
+  preferences.putString("mqttTopic", baseTopic);
+
+  preferences.end();
+
+  deviceConfig.mqttEnabled = enabled;
+  deviceConfig.mqttHost = host;
+  deviceConfig.mqttPort = port;
+  deviceConfig.mqttUsername = username;
+  deviceConfig.mqttPassword = password;
+  deviceConfig.mqttBaseTopic = baseTopic;
+
+  Serial.println("MQTT config saved.");
+  Serial.print("  MQTT enabled: ");
+  Serial.println(deviceConfig.mqttEnabled ? "Yes" : "No");
+  Serial.print("  MQTT configured: ");
+  Serial.println(hasMqttConfig() ? "Yes" : "No");
+  Serial.print("  MQTT host: ");
+  Serial.println(deviceConfig.mqttHost);
+  Serial.print("  MQTT port: ");
+  Serial.println(deviceConfig.mqttPort);
+  Serial.print("  MQTT base topic: ");
+  Serial.println(deviceConfig.mqttBaseTopic);
 }

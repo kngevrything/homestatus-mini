@@ -70,6 +70,13 @@ struct DeviceConfig {
   String deviceName;
   String apiKey;
 
+  bool mqttEnabled;
+  String mqttHost;
+  int mqttPort;
+  String mqttUsername;
+  String mqttPassword;
+  String mqttBaseTopic;
+
   bool hasWifiConfig() const {
     return wifiSSID.length() > 0;
   }
@@ -80,6 +87,10 @@ struct DeviceConfig {
 
   bool hasConfig() const {
     return hasWifiConfig() && hasApiKey();
+  }
+
+  bool hasMqttConfig() const {
+    return mqttEnabled && mqttHost.length() > 0 && mqttBaseTopic.length() > 0;
   }
 };
 
@@ -95,7 +106,13 @@ DeviceConfig deviceConfig = {
   "",
   "",
   "homestatus-mini",
-  ""
+  "",
+  false,
+  "",
+  1883,
+  "",
+  "",
+  "homestatus-mini"
 };
 
 StatusScreen currentStatus = {
@@ -206,6 +223,13 @@ void handleSerial();
 void processCommand(String command);
 void processSetCommand(String command);
 void printHelp();
+
+// -----------------------------------------------------------------------------
+// MQTT state
+// -----------------------------------------------------------------------------
+
+void saveMqttConfig(bool enabled, String host, int port, String username, String password, String baseTopic);
+bool hasMqttConfig();
 
 // -----------------------------------------------------------------------------
 // Status state

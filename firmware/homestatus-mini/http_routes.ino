@@ -179,31 +179,64 @@ void handleStatusJson() {
 }
 
 void handleConfigJson() {
-    if (!requireApiKey()) {
-      return;
-    }
+  if (!requireApiKey()) {
+    return;
+  }
 
-    String json = "";
+  String json = "";
 
-    json += "{";
-    json += "\"device\":\"" + escapeJson(getDeviceName()) + "\",";
-    json += "\"wifiConfigured\":";
-    json += hasSavedWifiConfig() ? "true" : "false";
-    json += ",";
-    json += "\"wifiSSID\":\"" + escapeJson(deviceConfig.wifiSSID) + "\",";
-    json += "\"apiKeyConfigured\":";
-    json += hasSavedApiKey() ? "true" : "false";
-    json += ",";
-    json += "\"setupModeActive\":";
-    json += setupModeActive ? "true" : "false";
-    json += ",";
-    json += "\"ip\":\"" + WiFi.localIP().toString() + "\",";
-    json += "\"wifiStatus\":\"" + wifiStatusToString(WiFi.status()) + "\",";
-    json += "\"uptimeMs\":";
-    json += String(millis());
-    json += "}";
+  json += "{";
 
-    server.send(200, "application/json", json);
+  json += "\"device\":\"" + escapeJson(getDeviceName()) + "\",";
+
+  json += "\"wifiConfigured\":";
+  json += hasSavedWifiConfig() ? "true" : "false";
+  json += ",";
+
+  json += "\"wifiSSID\":\"" + escapeJson(deviceConfig.wifiSSID) + "\",";
+
+  json += "\"apiKeyConfigured\":";
+  json += hasSavedApiKey() ? "true" : "false";
+  json += ",";
+
+  json += "\"setupModeActive\":";
+  json += setupModeActive ? "true" : "false";
+  json += ",";
+
+  json += "\"ip\":\"" + WiFi.localIP().toString() + "\",";
+
+  json += "\"wifiStatus\":\"" + wifiStatusToString(WiFi.status()) + "\",";
+
+  json += "\"uptimeMs\":";
+  json += String(millis());
+  json += ",";
+
+  json += "\"mqttEnabled\":";
+  json += deviceConfig.mqttEnabled ? "true" : "false";
+  json += ",";
+
+  json += "\"mqttConfigured\":";
+  json += hasMqttConfig() ? "true" : "false";
+  json += ",";
+
+  json += "\"mqttHost\":\"" + escapeJson(deviceConfig.mqttHost) + "\",";
+
+  json += "\"mqttPort\":";
+  json += String(deviceConfig.mqttPort);
+  json += ",";
+
+  json += "\"mqttUsernameConfigured\":";
+  json += deviceConfig.mqttUsername.length() > 0 ? "true" : "false";
+  json += ",";
+
+  json += "\"mqttPasswordConfigured\":";
+  json += deviceConfig.mqttPassword.length() > 0 ? "true" : "false";
+  json += ",";
+
+  json += "\"mqttBaseTopic\":\"" + escapeJson(deviceConfig.mqttBaseTopic) + "\"";
+
+  json += "}";
+  server.send(200, "application/json", json);
 }
 
 void handleHealth() {

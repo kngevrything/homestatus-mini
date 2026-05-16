@@ -89,6 +89,30 @@ void handleSetupRoot() {
   html += "<label>API Key</label>";
   html += "<input name=\"apiKey\" value=\"change-me\" required>";
 
+  html += "<h2>MQTT Settings</h2>";
+  html += "<p style=\"font-size:13px;color:#555;\">";
+  html += "Optional for now. These settings are saved but MQTT connection is not active until the next firmware slice.";
+  html += "</p>";
+
+  html += "<label>";
+  html += "<input name=\"mqttEnabled\" type=\"checkbox\" value=\"1\"> Enable MQTT";
+  html += "</label>";
+
+  html += "<label>MQTT Host</label>";
+  html += "<input name=\"mqttHost\" placeholder=\"192.168.1.10 or mqtt.local\">";
+
+  html += "<label>MQTT Port</label>";
+  html += "<input name=\"mqttPort\" type=\"number\" value=\"1883\">";
+
+  html += "<label>MQTT Username</label>";
+  html += "<input name=\"mqttUsername\">";
+
+  html += "<label>MQTT Password</label>";
+  html += "<input name=\"mqttPassword\" type=\"password\">";
+
+  html += "<label>MQTT Base Topic</label>";
+  html += "<input name=\"mqttBaseTopic\" value=\"homestatus-mini\">";
+
   html += "<button type=\"submit\">Save and Reboot</button>";
   html += "</form>";
 
@@ -120,6 +144,45 @@ void handleSetupSave() {
   }
 
   saveDeviceConfig(ssid, password, deviceName, apiKey);
+
+  bool mqttEnabled = server.hasArg("mqttEnabled");
+  String mqttHost = limitText(server.arg("mqttHost"), 64);
+  int mqttPort = server.hasArg("mqttPort") ? server.arg("mqttPort").toInt() : 1883;
+  String mqttUsername = limitText(server.arg("mqttUsername"), 64);
+  String mqttPassword = limitText(server.arg("mqttPassword"), 64);
+  String mqttBaseTopic = limitText(server.arg("mqttBaseTopic"), 64);
+
+  if (mqttPort <= 0) {
+    mqttPort = 1883;
+  }
+
+  if (mqttBaseTopic.length() == 0) {
+    mqttBaseTopic = deviceName;
+  }
+
+  saveMqttConfig(mqttEnabled, mqttHost, mqttPort, mqttUsername, mqttPassword, mqttBaseTopic);
+
+  // Setup save logging
+  Serial.println("Saved setup values:");
+  Serial.print("SSID: ");
+  Serial.println(ssid);
+  Serial.print("Device name: ");
+  Serial.println(deviceName);
+  Serial.print("API key length: ");
+  Serial.println(apiKey.length());
+
+  Serial.print("MQTT enabled: ");
+  Serial.println(mqttEnabled ? "Yes" : "No");
+  Serial.print("MQTT host: ");
+  Serial.println(mqttHost);
+  Serial.print("MQTT port: ");
+  Serial.println(mqttPort);
+  Serial.print("MQTT username configured: ");
+  Serial.println(mqttUsername.length() > 0 ? "Yes" : "No");
+  Serial.print("MQTT password configured: ");
+  Serial.println(mqttPassword.length() > 0 ? "Yes" : "No");
+  Serial.print("MQTT base topic: ");
+  Serial.println(mqttBaseTopic);
 
   String html = "";
   html += "<!doctype html><html><body>";
