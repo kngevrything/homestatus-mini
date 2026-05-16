@@ -112,4 +112,10 @@ void printHelp() {
   Serial.println("  GET /clear");
   Serial.println("  GET /set?level=alert&title=GARAGE&main=Open%20too%20long&footer=Alert%20active");
   Serial.println("  GET /factory-reset?key=YOUR_API_KEY");
+  Serial.println("  GET /config?key=YOUR_API_KEY");
+ 
+  Serial.println("Button:");
+  Serial.println("  Short press: acknowledge or clear");
+  Serial.println("  Long press 8s: factory reset and reboot");
+  
 }

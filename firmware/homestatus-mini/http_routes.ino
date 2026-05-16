@@ -42,6 +42,7 @@ String limitText(String value, int maxLength) {
 void setupHttpRoutes() {
   server.on("/", HTTP_GET, handleRoot);
   server.on("/status", HTTP_GET, handleStatusJson);
+  server.on("/config", HTTP_GET, handleConfigJson);
   server.on("/health", HTTP_GET, handleHealth);
   server.on("/reboot", HTTP_GET, handleReboot);
 
@@ -129,7 +130,7 @@ void handleRoot() {
   html += "<p><strong>Main:</strong> " + escapeHtml(currentStatus.mainText) + "</p>";
   html += "<p><strong>Footer:</strong> " + escapeHtml(currentStatus.footer) + "</p>";
   html += "<p><strong>IP:</strong> " + WiFi.localIP().toString() + "</p>";
-
+ 
   html += "<h2>Quick Actions</h2>";
   html += "<p>State-changing routes require <code>?key=YOUR_API_KEY</code>.</p>";
   html += "<code>/alert?key=YOUR_API_KEY</code><br>";
@@ -150,7 +151,7 @@ void handleRoot() {
   html += "<a href=\"/status\">Status JSON</a>";
   html += "<a href=\"/health\">Health</a>";
   html += "<a href=\"/reboot\">Reboot</a>";
-
+  html += "<a href=\"/config?key=YOUR_API_KEY\">Config</a>";
   html += "<h2>Custom Set</h2>";
   html += "<p>Example:</p>";
   html += "<code>/set?level=alert&title=GARAGE&main=Open%20too%20long&footer=Alert%20active</code>";
@@ -175,6 +176,34 @@ void handleStatusJson() {
   json += "}";
 
   server.send(200, "application/json", json);
+}
+
+void handleConfigJson() {
+    if (!requireApiKey()) {
+      return;
+    }
+
+    String json = "";
+
+    json += "{";
+    json += "\"device\":\"" + escapeJson(getDeviceName()) + "\",";
+    json += "\"wifiConfigured\":";
+    json += hasSavedWifiConfig() ? "true" : "false";
+    json += ",";
+    json += "\"wifiSSID\":\"" + escapeJson(deviceConfig.wifiSSID) + "\",";
+    json += "\"apiKeyConfigured\":";
+    json += hasSavedApiKey() ? "true" : "false";
+    json += ",";
+    json += "\"setupModeActive\":";
+    json += setupModeActive ? "true" : "false";
+    json += ",";
+    json += "\"ip\":\"" + WiFi.localIP().toString() + "\",";
+    json += "\"wifiStatus\":\"" + wifiStatusToString(WiFi.status()) + "\",";
+    json += "\"uptimeMs\":";
+    json += String(millis());
+    json += "}";
+
+    server.send(200, "application/json", json);
 }
 
 void handleHealth() {
@@ -211,11 +240,10 @@ void handleFactoryReset() {
     return;
   }
 
-  clearDeviceConfig();
-
   server.send(200, "text/plain", "Factory reset complete. Rebooting into setup mode...");
-  delay(1000);
-  ESP.restart();
+  delay(500);
+
+  factoryResetAndReboot();
 }
 
 void handleSetFromHttp() {

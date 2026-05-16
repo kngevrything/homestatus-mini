@@ -1,12 +1,47 @@
 void handleButton() {
-  bool buttonState = digitalRead(BUTTON_PIN);
+  bool isPressed = digitalRead(BUTTON_PIN) == LOW;
+  unsigned long now = millis();
 
-  if (lastButtonState == HIGH && buttonState == LOW) {
-    onButtonPressed();
-    delay(250);
+  if (isPressed != buttonWasPressed) {
+    if (now - lastButtonChangeMs < BUTTON_DEBOUNCE_MS) {
+      return;
+    }
+
+    lastButtonChangeMs = now;
+    buttonWasPressed = isPressed;
+
+    if (isPressed) {
+      buttonPressedAtMs = now;
+      longPressHandled = false;
+      Serial.println("Button pressed");
+    } else {
+      unsigned long heldMs = now - buttonPressedAtMs;
+
+      Serial.print("Button released after ");
+      Serial.print(heldMs);
+      Serial.println(" ms");
+
+      if (!longPressHandled) {
+        onButtonPressed();
+      }
+    }
   }
 
-  lastButtonState = buttonState;
+  if (isPressed && !longPressHandled) {
+    unsigned long heldMs = now - buttonPressedAtMs;
+
+    if (heldMs >= FACTORY_RESET_HOLD_MS) {
+      longPressHandled = true;
+
+      Serial.println("Factory reset long press detected.");
+
+      drawScreen("RESET", "Factory", "Rebooting...");
+      updateLed(STATUS_ALERT);
+
+      delay(1000);
+      factoryResetAndReboot();
+    }
+  }
 }
 
 void onButtonPressed() {

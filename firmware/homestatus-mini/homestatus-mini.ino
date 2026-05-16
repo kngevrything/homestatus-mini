@@ -25,6 +25,9 @@ const int GREEN_PIN = 25;
 const int RED_PIN   = 26;
 const int BLUE_PIN  = 27;
 
+const unsigned long BUTTON_DEBOUNCE_MS = 50;
+const unsigned long FACTORY_RESET_HOLD_MS = 8000;
+
 // -----------------------------------------------------------------------------
 // Device configuration
 // -----------------------------------------------------------------------------
@@ -105,6 +108,11 @@ StatusScreen currentStatus = {
 bool setupModeActive = false;
 bool lastButtonState = HIGH;
 
+bool buttonWasPressed = false;
+bool longPressHandled = false;
+unsigned long buttonPressedAtMs = 0;
+unsigned long lastButtonChangeMs = 0;
+
 String serialBuffer = "";
 
 // -----------------------------------------------------------------------------
@@ -155,6 +163,8 @@ void setupProvisioningRoutes();
 void handleSetupRoot();
 void handleSetupSave();
 
+void factoryResetAndReboot();
+
 // -----------------------------------------------------------------------------
 // HTTP routes
 // -----------------------------------------------------------------------------
@@ -167,6 +177,7 @@ void handleHealth();
 void handleReboot();
 void handleFactoryReset();
 void handleSetFromHttp();
+void handleConfigJson();
 
 void sendPlain(String message);
 
@@ -225,26 +236,29 @@ String escapeHtml(String value);
 
 
 void setup() {
-  Serial.begin(115200);
+    Serial.begin(115200);
 
-  setupPins();
-  setupDisplay();
+    setupPins();
+    setupDisplay();
 
-  setStatus(STATUS_OK, "HOME", "All Good", "No alerts", false);
+    setStatus(STATUS_OK, "HOME", "All Good", "No alerts", false);
 
-  loadDeviceConfig();
-
-  connectToWifi();
-
-  if (WiFi.status() != WL_CONNECTED) {
-    startSetupMode();
-  } else {
-    setupHttpRoutes();
-  }
+    loadDeviceConfig();
   
-  Serial.println();
-  Serial.println("HomeStatus Mini ready.");
-  printHelp();
+    drawScreen(getDeviceName(), "Booting", "HomeStatus Mini");
+    delay(1500);
+
+    connectToWifi();
+
+    if (WiFi.status() != WL_CONNECTED) {
+      startSetupMode();
+    } else {
+      setupHttpRoutes();
+    }
+    
+    Serial.println();
+    Serial.println("HomeStatus Mini ready.");
+    printHelp();
 }
 
 void loop() {

@@ -1,26 +1,26 @@
 const char* PREFERENCES_NAMESPACE = "homestatus";
 
 void loadDeviceConfig() {
-  preferences.begin(PREFERENCES_NAMESPACE, true);
+    preferences.begin(PREFERENCES_NAMESPACE, true);
 
-  deviceConfig.wifiSSID = preferences.getString("wifiSSID", "");
-  deviceConfig.wifiPassword = preferences.getString("wifiPassword", "");
-  deviceConfig.deviceName = preferences.getString("deviceName", "homestatus-mini");
-  deviceConfig.apiKey = preferences.getString("apiKey", "");
+    deviceConfig.wifiSSID = preferences.getString("wifiSSID", "");
+    deviceConfig.wifiPassword = preferences.getString("wifiPassword", "");
+    deviceConfig.deviceName = preferences.getString("deviceName", "homestatus-mini");
+    deviceConfig.apiKey = preferences.getString("apiKey", "");
 
-  preferences.end();
+    preferences.end();
 
-  Serial.println("Loaded device config:");
-  Serial.print("  Wi-Fi configured: ");
-  Serial.println(hasSavedWifiConfig() ? "Yes" : "No");
-  Serial.print("  API key configured: ");
-  Serial.println(hasSavedApiKey() ? "Yes" : "No");
-  Serial.print("  Device Name: ");
-  Serial.println(deviceConfig.deviceName);
-  Serial.print("  WiFi SSID: ");
-  Serial.println(deviceConfig.wifiSSID);
-  Serial.print("  Has complete config: ");
-  Serial.println(hasCompleteDeviceConfig() ? "Yes" : "No");
+    Serial.println("Loaded device config:");
+    Serial.print("  Wi-Fi configured: ");
+    Serial.println(hasSavedWifiConfig() ? "Yes" : "No");
+    Serial.print("  API key configured: ");
+    Serial.println(hasSavedApiKey() ? "Yes" : "No");
+    Serial.print("  Device Name: ");
+    Serial.println(deviceConfig.deviceName);
+    Serial.print("  WiFi SSID: ");
+    Serial.println(deviceConfig.wifiSSID);
+    Serial.print("  Has complete config: ");
+    Serial.println(hasCompleteDeviceConfig() ? "Yes" : "No");
 }
 
 void saveDeviceConfig(String ssid, String password, String deviceName, String apiKey) {
@@ -69,6 +69,15 @@ void clearDeviceConfig() {
   deviceConfig.apiKey = "";
 
   Serial.println("Device config cleared.");
+}
+
+void factoryResetAndReboot() {
+  clearDeviceConfig();
+
+  Serial.println("Factory reset complete. Rebooting into setup mode...");
+  delay(1000);
+
+  ESP.restart();
 }
 
 bool hasSavedWifiConfig() {
