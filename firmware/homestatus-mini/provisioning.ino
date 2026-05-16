@@ -1,0 +1,134 @@
+void startSetupMode() {
+  setupModeActive = true;
+
+  server.stop();
+  delay(100);
+
+  const char* setupSsid = "HomeStatus-Setup";
+  const char* setupPassword = "homestatus";
+
+  Serial.println("Starting setup mode.");
+  Serial.print("Setup SSID: ");
+  Serial.println(setupSsid);
+  Serial.println("Setup URL: http://192.168.99.1");
+
+  WiFi.disconnect(true);
+  delay(250);
+
+  WiFi.mode(WIFI_AP);
+  delay(100);
+
+  IPAddress localIp(192, 168, 99, 1);
+  IPAddress gateway(192, 168, 99, 1);
+  IPAddress subnet(255, 255, 255, 0);
+
+  bool configOk = WiFi.softAPConfig(localIp, gateway, subnet);
+
+  Serial.print("softAPConfig OK: ");
+  Serial.println(configOk ? "yes" : "no");
+
+  bool apStarted = WiFi.softAP(setupSsid, setupPassword);
+
+  Serial.print("softAP started: ");
+  Serial.println(apStarted ? "yes" : "no");
+
+  IPAddress ip = WiFi.softAPIP();
+
+  Serial.print("softAP IP: ");
+  Serial.println(ip);
+
+  drawScreen("SETUP MODE", setupSsid, ip.toString());
+
+  setupProvisioningRoutes();
+
+  server.begin();
+  Serial.println("Setup HTTP server started.");
+}
+
+void setupProvisioningRoutes() {
+  server.on("/", HTTP_GET, handleSetupRoot);
+  server.on("/setup", HTTP_GET, handleSetupRoot);
+  server.on("/save", HTTP_POST, handleSetupSave);
+
+  server.onNotFound([]() {
+    server.send(404, "text/plain", "Setup route not found");
+  });
+}
+
+void handleSetupRoot() {
+  String html = "";
+
+  html += "<!doctype html>";
+  html += "<html>";
+  html += "<head>";
+  html += "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">";
+  html += "<title>HomeStatus Mini Setup</title>";
+  html += "<style>";
+  html += "body{font-family:Arial,sans-serif;margin:24px;line-height:1.4;}";
+  html += ".card{border:1px solid #ddd;border-radius:12px;padding:16px;max-width:520px;}";
+  html += "label{display:block;margin-top:12px;font-weight:bold;}";
+  html += "input{width:100%;box-sizing:border-box;padding:8px;margin-top:4px;}";
+  html += "button{margin-top:16px;padding:10px 14px;border:0;border-radius:8px;background:#111;color:#fff;}";
+  html += "</style>";
+  html += "</head>";
+  html += "<body>";
+  html += "<div class=\"card\">";
+  html += "<h1>HomeStatus Mini Setup</h1>";
+  html += "<p>Enter your local Wi-Fi settings and a local API key.</p>";
+  html += "<form method=\"POST\" action=\"/save\">";
+
+  html += "<label>Wi-Fi SSID</label>";
+  html += "<input name=\"wifiSSID\" required>";
+
+  html += "<label>Wi-Fi Password</label>";
+  html += "<input name=\"wifiPassword\" type=\"password\">";
+
+  html += "<label>Device Name</label>";
+  html += "<input name=\"deviceName\" value=\"homestatus-mini\">";
+
+  html += "<label>API Key</label>";
+  html += "<input name=\"apiKey\" value=\"change-me\" required>";
+
+  html += "<button type=\"submit\">Save and Reboot</button>";
+  html += "</form>";
+
+  html += "<p style=\"margin-top:16px;font-size:13px;color:#555;\">";
+  html += "After saving, reconnect your phone or computer to your normal Wi-Fi network.";
+  html += "</p>";
+
+  html += "</div>";
+  html += "</body>";
+  html += "</html>";
+
+  server.send(200, "text/html", html);
+}
+
+void handleSetupSave() {
+  if (!server.hasArg("wifiSSID") || !server.hasArg("apiKey")) {
+    server.send(400, "text/plain", "Missing required setup fields.");
+    return;
+  }
+
+  String ssid = limitText(server.arg("wifiSSID"), 64);
+  String password = limitText(server.arg("wifiPassword"), 64);
+  String deviceName = limitText(server.arg("deviceName"), 32);
+  String apiKey = limitText(server.arg("apiKey"), 64);
+
+  if (ssid.length() == 0 || apiKey.length() < 8) {
+    server.send(400, "text/plain", "SSID is required and API key must be at least 8 characters.");
+    return;
+  }
+
+  saveDeviceConfig(ssid, password, deviceName, apiKey);
+
+  String html = "";
+  html += "<!doctype html><html><body>";
+  html += "<h1>Saved</h1>";
+  html += "<p>HomeStatus Mini is rebooting and will try to join your Wi-Fi network.</p>";
+  html += "</body></html>";
+
+  server.send(200, "text/html", html);
+
+  delay(1000);
+  ESP.restart();
+}

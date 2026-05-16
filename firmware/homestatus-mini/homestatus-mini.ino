@@ -1,25 +1,16 @@
 #include <Wire.h>
 #include <WiFi.h>
 #include <WebServer.h>
+#include <Preferences.h>
+
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
+
 #include "wifi_config.h"
 
-
-void setupHttpRoutes();
-void handleRoot();
-void handleStatusJson();
-void handleHealth();
-void handleReboot();
-void handleSetFromHttp();
-void sendPlain(String message);
-
-bool requireApiKey();
-bool hasValidApiKey();
-String limitedTextArg(const String& name, const String& fallback, int maxLength);
-String limitText(String value, int maxLength);
-
-
+// -----------------------------------------------------------------------------
+// Hardware configuration
+// -----------------------------------------------------------------------------
 
 const int SCREEN_WIDTH = 128;
 const int SCREEN_HEIGHT = 64;
@@ -29,18 +20,27 @@ const int OLED_SCL = 22;
 
 const int BUTTON_PIN = 18;
 
-// Confirmed RGB mapping
+// Confirmed RGB channel mapping
 const int GREEN_PIN = 25;
 const int RED_PIN   = 26;
 const int BLUE_PIN  = 27;
 
+// -----------------------------------------------------------------------------
+// Device configuration
+// -----------------------------------------------------------------------------
+
 const char* DEVICE_NAME = "homestatus-mini";
+
+// -----------------------------------------------------------------------------
+// Wi-Fi runtime configuration
+// -----------------------------------------------------------------------------
 
 const unsigned long WIFI_CHECK_INTERVAL_MS = 10000;
 unsigned long lastWifiCheckMs = 0;
 
-Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
-WebServer server(80);
+// -----------------------------------------------------------------------------
+// Status types
+// -----------------------------------------------------------------------------
 
 enum StatusLevel {
   STATUS_OK,
@@ -57,6 +57,44 @@ struct StatusScreen {
   String footer;
 };
 
+// -----------------------------------------------------------------------------
+// Device config model
+// -----------------------------------------------------------------------------
+
+struct DeviceConfig {
+  String wifiSSID;
+  String wifiPassword;
+  String deviceName;
+  String apiKey;
+
+  bool hasWifiConfig() const {
+    return wifiSSID.length() > 0;
+  }
+
+  bool hasApiKey() const {
+    return apiKey.length() > 0;
+  }
+
+  bool hasConfig() const {
+    return hasWifiConfig() && hasApiKey();
+  }
+};
+
+// -----------------------------------------------------------------------------
+// Global objects
+// -----------------------------------------------------------------------------
+
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
+WebServer server(80);
+Preferences preferences;
+
+DeviceConfig deviceConfig = {
+  "",
+  "",
+  "homestatus-mini",
+  ""
+};
+
 StatusScreen currentStatus = {
   STATUS_OK,
   "HOME",
@@ -64,34 +102,103 @@ StatusScreen currentStatus = {
   "No alerts"
 };
 
+bool setupModeActive = false;
 bool lastButtonState = HIGH;
+
 String serialBuffer = "";
 
-// Forward declarations
+// -----------------------------------------------------------------------------
+// Hardware setup
+// -----------------------------------------------------------------------------
+
 void setupPins();
+
+// -----------------------------------------------------------------------------
+// Display
+// -----------------------------------------------------------------------------
 
 void setupDisplay();
 void drawScreen(String title, String mainText, String footer);
 
+// -----------------------------------------------------------------------------
+// Device config persistence
+// -----------------------------------------------------------------------------
+
+void loadDeviceConfig();
+void saveDeviceConfig(String ssid, String password, String deviceName, String apiKey);
+void clearDeviceConfig();
+
+bool hasSavedWifiConfig();
+bool hasSavedApiKey();
+bool hasCompleteDeviceConfig();
+
+String getDeviceName();
+String getApiKey();
+
+// -----------------------------------------------------------------------------
+// Wi-Fi management
+// -----------------------------------------------------------------------------
+
 void connectToWifi();
 void checkWifiConnection();
+void switchToStationMode();
+
 String wifiStatusToString(wl_status_t status);
 
+// -----------------------------------------------------------------------------
+// Provisioning / setup mode
+// -----------------------------------------------------------------------------
+
+void startSetupMode();
+void setupProvisioningRoutes();
+
+void handleSetupRoot();
+void handleSetupSave();
+
+// -----------------------------------------------------------------------------
+// HTTP routes
+// -----------------------------------------------------------------------------
+
 void setupHttpRoutes();
+
 void handleRoot();
 void handleStatusJson();
 void handleHealth();
 void handleReboot();
+void handleFactoryReset();
 void handleSetFromHttp();
+
 void sendPlain(String message);
+
+// -----------------------------------------------------------------------------
+// HTTP security and input validation
+// -----------------------------------------------------------------------------
+
+bool requireApiKey();
+bool hasValidApiKey();
+
+String limitedTextArg(const String& name, const String& fallback, int maxLength);
+String limitText(String value, int maxLength);
+
+// -----------------------------------------------------------------------------
+// Button
+// -----------------------------------------------------------------------------
 
 void handleButton();
 void onButtonPressed();
+
+// -----------------------------------------------------------------------------
+// Serial commands
+// -----------------------------------------------------------------------------
 
 void handleSerial();
 void processCommand(String command);
 void processSetCommand(String command);
 void printHelp();
+
+// -----------------------------------------------------------------------------
+// Status state
+// -----------------------------------------------------------------------------
 
 bool tryParseStatusLevel(String levelText, StatusLevel& level);
 
@@ -108,8 +215,14 @@ void updateLed(StatusLevel level);
 void allOff();
 
 String statusLevelToString(StatusLevel level);
+
+// -----------------------------------------------------------------------------
+// Encoding helpers
+// -----------------------------------------------------------------------------
+
 String escapeJson(String value);
 String escapeHtml(String value);
+
 
 void setup() {
   Serial.begin(115200);
@@ -119,9 +232,16 @@ void setup() {
 
   setStatus(STATUS_OK, "HOME", "All Good", "No alerts", false);
 
-  connectToWifi();
-  setupHttpRoutes();
+  loadDeviceConfig();
 
+  connectToWifi();
+
+  if (WiFi.status() != WL_CONNECTED) {
+    startSetupMode();
+  } else {
+    setupHttpRoutes();
+  }
+  
   Serial.println();
   Serial.println("HomeStatus Mini ready.");
   printHelp();
@@ -131,5 +251,8 @@ void loop() {
   handleButton();
   handleSerial();
   server.handleClient();
-  checkWifiConnection();
+
+  if (!setupModeActive) {
+    checkWifiConnection();
+  }
 }

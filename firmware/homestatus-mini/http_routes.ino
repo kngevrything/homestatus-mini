@@ -18,7 +18,7 @@ bool hasValidApiKey() {
     return false;
   }
 
-  return providedKey == String(API_KEY);
+  return providedKey == getApiKey();
 }
 
 String limitedTextArg(const String& name, const String& fallback, int maxLength) {
@@ -99,6 +99,8 @@ void setupHttpRoutes() {
     server.send(404, "text/plain", "Not found");
   });
 
+  server.on("/factory-reset", HTTP_GET, handleFactoryReset);
+
   server.begin();
   Serial.println("HTTP server started.");
 }
@@ -121,7 +123,7 @@ void handleRoot() {
   html += "<body>";
   html += "<div class=\"card\">";
   html += "<h1>HomeStatus Mini</h1>";
-  html += "<p><strong>Device:</strong> " + String(DEVICE_NAME) + "</p>";
+  html += "<p><strong>Device:</strong> " + String(getDeviceName()) + "</p>";
   html += "<p><strong>Level:</strong> " + statusLevelToString(currentStatus.level) + "</p>";
   html += "<p><strong>Title:</strong> " + escapeHtml(currentStatus.title) + "</p>";
   html += "<p><strong>Main:</strong> " + escapeHtml(currentStatus.mainText) + "</p>";
@@ -164,7 +166,7 @@ void handleStatusJson() {
   String json = "";
 
   json += "{";
-  json += "\"device\":\"" + String(DEVICE_NAME) + "\",";
+  json += "\"device\":\"" + String(getDeviceName()) + "\",";
   json += "\"level\":\"" + statusLevelToString(currentStatus.level) + "\",";
   json += "\"title\":\"" + escapeJson(currentStatus.title) + "\",";
   json += "\"mainText\":\"" + escapeJson(currentStatus.mainText) + "\",";
@@ -179,7 +181,7 @@ void handleHealth() {
   String json = "";
 
   json += "{";
-  json += "\"device\":\"" + String(DEVICE_NAME) + "\",";
+  json += "\"device\":\"" + String(getDeviceName()) + "\",";
   json += "\"status\":\"ok\",";
   json += "\"wifiConnected\":";
   json += WiFi.status() == WL_CONNECTED ? "true" : "false";
@@ -201,6 +203,18 @@ void handleReboot() {
 
   server.send(200, "text/plain", "Rebooting HomeStatus Mini...");
   delay(500);
+  ESP.restart();
+}
+
+void handleFactoryReset() {
+  if (!requireApiKey()) {
+    return;
+  }
+
+  clearDeviceConfig();
+
+  server.send(200, "text/plain", "Factory reset complete. Rebooting into setup mode...");
+  delay(1000);
   ESP.restart();
 }
 

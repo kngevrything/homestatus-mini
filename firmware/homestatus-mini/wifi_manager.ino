@@ -1,11 +1,29 @@
-void connectToWifi() {
-  drawScreen("WIFI", "Connecting", WIFI_SSID);
-
-  Serial.print("Connecting to Wi-Fi: ");
-  Serial.println(WIFI_SSID);
+void switchToStationMode() {
+  WiFi.softAPdisconnect(true);
+  delay(100);
 
   WiFi.mode(WIFI_STA);
-  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+  delay(100);
+}
+
+void connectToWifi() {
+  String ssid = deviceConfig.wifiSSID;
+  String password = deviceConfig.wifiPassword;
+
+  if (ssid.length() == 0) {
+    Serial.println("No saved Wi-Fi SSID configured.");
+    drawScreen("WIFI", "No Config", "Setup needed");
+    return;
+  }
+
+  drawScreen("WIFI", "Connecting", ssid);
+
+  Serial.print("Connecting to Wi-Fi: ");
+  Serial.println(ssid);
+
+  switchToStationMode();
+
+  WiFi.begin(ssid, password);
 
   int attempts = 0;
 
@@ -40,6 +58,14 @@ void connectToWifi() {
 }
 
 void checkWifiConnection() {
+  String ssid = deviceConfig.wifiSSID;
+  String password = deviceConfig.wifiPassword;
+
+  if (ssid.length() == 0) {
+    Serial.println("No saved Wi-Fi SSID configured. Reconnect skipped.");
+    return;
+  }
+
   unsigned long now = millis();
 
   if (now - lastWifiCheckMs < WIFI_CHECK_INTERVAL_MS) {
@@ -56,7 +82,11 @@ void checkWifiConnection() {
 
   WiFi.disconnect();
   delay(100);
-  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+
+  WiFi.mode(WIFI_STA);
+  delay(100);
+
+  WiFi.begin(ssid.c_str(), password.c_str());
 
   int attempts = 0;
 
