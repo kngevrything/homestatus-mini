@@ -48,7 +48,9 @@ void onButtonPressed() {
   if (currentStatus.level == STATUS_WARNING || currentStatus.level == STATUS_ALERT) {
     currentStatus.level = STATUS_ACKED;
     currentStatus.footer = "Acknowledged";
+    
     showStatus();
+    publishMqttStatus();
 
     Serial.println("Alert acknowledged");
     return;

@@ -6,6 +6,9 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
 
+#include <PubSubClient.h>
+#include <ArduinoJson.h>
+
 #include "wifi_config.h"
 
 // -----------------------------------------------------------------------------
@@ -27,6 +30,9 @@ const int BLUE_PIN  = 27;
 
 const unsigned long BUTTON_DEBOUNCE_MS = 50;
 const unsigned long FACTORY_RESET_HOLD_MS = 8000;
+
+const unsigned long MQTT_RECONNECT_INTERVAL_MS = 10000;
+unsigned long lastMqttReconnectAttemptMs = 0;
 
 // -----------------------------------------------------------------------------
 // Device configuration
@@ -225,11 +231,26 @@ void processSetCommand(String command);
 void printHelp();
 
 // -----------------------------------------------------------------------------
-// MQTT state
+// MQTT
 // -----------------------------------------------------------------------------
 
 void saveMqttConfig(bool enabled, String host, int port, String username, String password, String baseTopic);
 bool hasMqttConfig();
+void setupMqtt();
+void handleMqtt();
+void reconnectMqttIfNeeded();
+void onMqttMessage(char* topic, byte* payload, unsigned int length);
+
+void publishMqttStatus();
+void publishMqttAvailability(const char* availability);
+
+String mqttStateToString(int state);
+
+String mqttTopic(String suffix);
+bool isMqttReady();
+
+WiFiClient mqttWifiClient;
+PubSubClient mqttClient(mqttWifiClient);
 
 // -----------------------------------------------------------------------------
 // Status state
@@ -278,6 +299,7 @@ void setup() {
       startSetupMode();
     } else {
       setupHttpRoutes();
+      setupMqtt();
     }
     
     Serial.println();
@@ -292,5 +314,6 @@ void loop() {
 
   if (!setupModeActive) {
     checkWifiConnection();
+    handleMqtt();
   }
 }

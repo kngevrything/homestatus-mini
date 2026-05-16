@@ -101,6 +101,9 @@ void checkWifiConnection() {
   if (WiFi.status() == WL_CONNECTED) {
     Serial.print("Wi-Fi reconnected. IP address: ");
     Serial.println(WiFi.localIP());
+
+    publishMqttStatus();
+    
   } else {
     Serial.print("Wi-Fi reconnect failed. Status: ");
     Serial.print(WiFi.status());

@@ -248,6 +248,17 @@ void handleHealth() {
   json += "\"wifiConnected\":";
   json += WiFi.status() == WL_CONNECTED ? "true" : "false";
   json += ",";
+  json += "\"mqttEnabled\":";
+  json += deviceConfig.mqttEnabled ? "true" : "false";
+  json += ",";
+
+  json += "\"mqttConfigured\":";
+  json += hasMqttConfig() ? "true" : "false";
+  json += ",";
+
+  json += "\"mqttConnected\":";
+  json += mqttClient.connected() ? "true" : "false";
+  json += ",";
   json += "\"wifiStatus\":\"" + wifiStatusToString(WiFi.status()) + "\",";
   json += "\"ip\":\"" + WiFi.localIP().toString() + "\",";
   json += "\"level\":\"" + statusLevelToString(currentStatus.level) + "\",";

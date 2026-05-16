@@ -34,6 +34,8 @@ void setStatus(StatusLevel level, String title, String mainText, String footer, 
 
   showStatus();
 
+  publishMqttStatus();
+
   if (logUpdate) {
     Serial.print("Status updated: ");
     Serial.print(statusLevelToString(level));
