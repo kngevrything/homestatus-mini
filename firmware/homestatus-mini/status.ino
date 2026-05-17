@@ -26,6 +26,18 @@ void setStatus(StatusLevel level, String title, String mainText, String footer) 
   setStatus(level, title, mainText, footer, true);
 }
 
+bool setDefaultWarningWithPriority() {
+  return setStatusWithPriority(STATUS_WARNING, "GARAGE", "Open 29 min", "Warning");
+}
+
+bool setDefaultAlertWithPriority() {
+  return setStatusWithPriority(STATUS_ALERT, "GARAGE", "Open too long", "Alert active");
+}
+
+bool setDefaultInfoWithPriority() {
+  return setStatusWithPriority(STATUS_INFO, "WASHER", "Done", "Move laundry");
+}
+
 void setStatus(StatusLevel level, String title, String mainText, String footer, bool logUpdate) {
   currentStatus.level = level;
   currentStatus.title = title;
@@ -137,4 +149,52 @@ String statusLevelToString(StatusLevel level) {
   }
 
   return "unknown";
+}
+
+int statusPriority(StatusLevel level) {
+  switch (level) {
+    case STATUS_ALERT:
+      return 4;
+
+    case STATUS_ACKED:
+      return 4;
+
+    case STATUS_WARNING:
+      return 3;
+
+    case STATUS_INFO:
+      return 2;
+
+    case STATUS_OK:
+      return 1;
+  }
+
+  return 0;
+}
+
+bool shouldAcceptStatusUpdate(StatusLevel incomingLevel, StatusLevel currentLevel) {
+  // OK is an explicit clear. Always accept it.
+  if (incomingLevel == STATUS_OK) {
+    return true;
+  }
+
+  // Alert acknowledged should not be overwritten by lower priority messages.
+  if (currentLevel == STATUS_ACKED && incomingLevel != STATUS_ALERT) {
+    return false;
+  }
+
+  return statusPriority(incomingLevel) >= statusPriority(currentLevel);
+}
+
+bool setStatusWithPriority(StatusLevel level, String title, String mainText, String footer) {
+  if (!shouldAcceptStatusUpdate(level, currentStatus.level)) {
+    Serial.print("Status update ignored due to priority. Incoming: ");
+    Serial.print(statusLevelToString(level));
+    Serial.print(", current: ");
+    Serial.println(statusLevelToString(currentStatus.level));
+    return false;
+  }
+
+  setStatus(level, title, mainText, footer);
+  return true;
 }

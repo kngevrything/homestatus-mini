@@ -57,6 +57,15 @@ Home Assistant should create:
 | `info`    | Blue   | Informational or task complete                    |
 | `acked`   | Yellow | Alert has been acknowledged but not fully cleared |
 
+## Message Priority
+
+HomeStatus Mini protects higher-priority messages from being overwritten by lower-priority automation updates.
+
+Priority order:
+
+````text
+alert > warning > info > ok
+
 ## Publish a Custom Status
 
 Use the `mqtt.publish` service.
@@ -72,7 +81,7 @@ data:
       "main": "Open too long",
       "footer": "Check door"
     }
-```
+````
 
 Expected result:
 

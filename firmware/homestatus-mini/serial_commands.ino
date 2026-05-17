@@ -87,7 +87,7 @@ void processSetCommand(String command) {
     return;
   }
 
-  setStatus(level, title, mainText, footer);
+  setStatusWithPriority(level, title, mainText, footer);
 }
 
 void printHelp() {

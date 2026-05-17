@@ -192,7 +192,7 @@ void onMqttMessage(char* topic, byte* payload, unsigned int length) {
     return;
   }
 
-  setStatus(level, title, mainText, footer);
+  setStatusWithPriority(level, title, mainText, footer);
 }
 
 void publishMqttStatus() {
@@ -539,17 +539,17 @@ void handleMqttLevelSet(String levelText) {
   }
 
   if (levelText == "warning") {
-    setDefaultWarning();
+    setDefaultWarningWithPriority();
     return;
   }
 
   if (levelText == "alert") {
-    setDefaultAlert();
+    setDefaultAlertWithPriority();
     return;
   }
 
   if (levelText == "info") {
-    setDefaultInfo();
+    setDefaultInfoWithPriority();
     return;
   }
 

@@ -288,15 +288,25 @@ void setStatus(StatusLevel level, String title, String mainText, String footer);
 void setStatus(StatusLevel level, String title, String mainText, String footer, bool logUpdate);
 
 void setDefaultOk();
+
 void setDefaultWarning();
+bool setDefaultWarningWithPriority();
+
 void setDefaultAlert();
+bool setDefaultAlertWithPriority();
+
 void setDefaultInfo();
+bool setDefaultInfoWithPriority();
 
 void showStatus();
 void updateLed(StatusLevel level);
 void allOff();
 
 String statusLevelToString(StatusLevel level);
+
+bool setStatusWithPriority(StatusLevel level, String title, String mainText, String footer);
+int statusPriority(StatusLevel level);
+bool shouldAcceptStatusUpdate(StatusLevel incomingLevel, StatusLevel currentLevel);
 
 // -----------------------------------------------------------------------------
 // Encoding helpers

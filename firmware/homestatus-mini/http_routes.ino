@@ -314,9 +314,9 @@ void handleSetFromHttp() {
     return;
   }
 
-  setStatus(level, title, mainText, footer);
+  bool accepted = setStatusWithPriority(level, title, mainText, footer);
 
-  String response = "Status updated: ";
+  String response = accepted ? "Status updated: " : "Status ignored due to priority: ";
   response += statusLevelToString(level);
   response += " / ";
   response += title;
@@ -325,7 +325,7 @@ void handleSetFromHttp() {
   response += " / ";
   response += footer;
 
-  server.send(200, "text/plain", response);
+  server.send(accepted ? 200 : 409, "text/plain", response);
 }
 
 void sendPlain(String message) {
