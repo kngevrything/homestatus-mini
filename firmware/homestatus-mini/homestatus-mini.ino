@@ -266,6 +266,17 @@ void publishHaButtonDiscovery(
 
 void handleMqttAction(String action);
 
+void publishHaSelectDiscovery(
+  String objectId,
+  String name,
+  String commandTopic,
+  String stateTopic,
+  String valueTemplate,
+  String icon
+);
+
+void handleMqttLevelSet(String levelText);
+
 
 // -----------------------------------------------------------------------------
 // Status state

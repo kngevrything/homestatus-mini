@@ -57,3 +57,31 @@ clear
 ```
 
 These currently map to the same behavior as the physical button.
+
+## MQTT Status Level Topic
+
+The device listens for simple status level changes on:
+
+```text
+<baseTopic>/level/set
+```
+
+Payload values:
+
+```text
+ok
+warning
+alert
+info
+```
+
+These map to the device's default status messages.
+
+Example:
+
+```text
+Topic: homestatus-mini/level/set
+Payload: alert
+```
+
+Home Assistant discovery creates a `Status Level` select entity that uses this topic.

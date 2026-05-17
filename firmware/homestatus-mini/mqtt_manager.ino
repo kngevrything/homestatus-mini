@@ -53,6 +53,7 @@ void reconnectMqttIfNeeded() {
   String availabilityTopic = mqttTopic("availability");
   String setTopic = mqttTopic("set");
   String actionTopic = mqttTopic("action");
+  String levelSetTopic = mqttTopic("level/set");
 
   Serial.print("Connecting to MQTT broker: ");
   Serial.println(deviceConfig.mqttHost);
@@ -111,6 +112,14 @@ void reconnectMqttIfNeeded() {
     Serial.println(actionTopic);
   }
 
+  if (mqttClient.subscribe(levelSetTopic.c_str())) {
+    Serial.print("MQTT subscribed: ");
+    Serial.println(levelSetTopic);
+  } else {
+    Serial.print("MQTT subscribe failed: ");
+    Serial.println(levelSetTopic);
+  }
+
   publishMqttStatus();
 }
 
@@ -119,6 +128,18 @@ void onMqttMessage(char* topic, byte* payload, unsigned int length) {
 
   Serial.print("MQTT message received on ");
   Serial.println(topicText);
+
+  if (topicText == mqttTopic("level/set")) {
+    String levelText = "";
+
+    for (unsigned int i = 0; i < length; i++) {
+      levelText += (char)payload[i];
+    }
+
+    levelText = limitText(levelText, 16);
+    handleMqttLevelSet(levelText);
+    return;
+  }
 
   if (topicText == mqttTopic("action")) {
     StaticJsonDocument<128> actionDoc;
@@ -312,6 +333,15 @@ void publishHomeAssistantDiscovery() {
     "mdi:check-circle-outline"
   );
 
+  publishHaSelectDiscovery(
+    baseObjectId + "_status_level",
+    "Status Level",
+    mqttTopic("level/set"),
+    mqttTopic("status"),
+    "{{ value_json.level }}",
+    "mdi:format-list-bulleted"
+  );
+
   Serial.println("Home Assistant discovery publish attempt complete.");
 }
 
@@ -494,4 +524,102 @@ void handleMqttAction(String action) {
 
   Serial.print("Unknown MQTT action: ");
   Serial.println(action);
+}
+
+void handleMqttLevelSet(String levelText) {
+  levelText.toLowerCase();
+  levelText.trim();
+
+  Serial.print("MQTT level set received: ");
+  Serial.println(levelText);
+
+  if (levelText == "ok") {
+    setDefaultOk();
+    return;
+  }
+
+  if (levelText == "warning") {
+    setDefaultWarning();
+    return;
+  }
+
+  if (levelText == "alert") {
+    setDefaultAlert();
+    return;
+  }
+
+  if (levelText == "info") {
+    setDefaultInfo();
+    return;
+  }
+
+  Serial.print("Unknown MQTT level set value: ");
+  Serial.println(levelText);
+}
+
+void publishHaSelectDiscovery(
+  String objectId,
+  String name,
+  String commandTopic,
+  String stateTopic,
+  String valueTemplate,
+  String icon
+) {
+  if (!isMqttReady()) {
+    return;
+  }
+
+  String discoveryTopic = "homeassistant/select/";
+  discoveryTopic += objectId;
+  discoveryTopic += "/config";
+
+  String availabilityTopic = mqttTopic("availability");
+
+  StaticJsonDocument<1024> doc;
+
+  doc["name"] = name;
+  doc["unique_id"] = objectId;
+  doc["command_topic"] = commandTopic;
+  doc["state_topic"] = stateTopic;
+  doc["value_template"] = valueTemplate;
+  doc["availability_topic"] = availabilityTopic;
+  doc["icon"] = icon;
+
+  JsonArray options = doc.createNestedArray("options");
+  options.add("ok");
+  options.add("warning");
+  options.add("alert");
+  options.add("info");
+
+  JsonObject device = doc.createNestedObject("device");
+  device["identifiers"][0] = haSafeObjectId(getDeviceName());
+  device["name"] = getDeviceName();
+  device["manufacturer"] = "HomeStatus";
+  device["model"] = "HomeStatus Mini";
+
+  char buffer[1024];
+  size_t length = serializeJson(doc, buffer, sizeof(buffer));
+
+  bool published = mqttClient.publish(
+    discoveryTopic.c_str(),
+    reinterpret_cast<const uint8_t*>(buffer),
+    length,
+    true
+  );
+
+  if (!published) {
+    Serial.print("HA select discovery publish failed: ");
+    Serial.println(discoveryTopic);
+    Serial.print("Payload length: ");
+    Serial.println(length);
+    Serial.print("MQTT state: ");
+    Serial.print(mqttClient.state());
+    Serial.print(" ");
+    Serial.println(mqttStateToString(mqttClient.state()));
+  } else {
+    Serial.print("HA select discovery published: ");
+    Serial.println(discoveryTopic);
+    Serial.print("HA select discovery payload size: ");
+    Serial.println(length);
+  }
 }
