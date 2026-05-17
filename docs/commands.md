@@ -31,3 +31,29 @@ When MQTT is enabled and configured, the device uses these topics:
 <baseTopic>/status
 <baseTopic>/availability
 ```
+
+## MQTT Action Topic
+
+The device also listens for simple actions on:
+
+```text
+<baseTopic>/action
+```
+
+Example:
+
+```json
+{
+  "action": "ack"
+}
+```
+
+Supported actions:
+
+```text
+ack
+acknowledge
+clear
+```
+
+These currently map to the same behavior as the physical button.

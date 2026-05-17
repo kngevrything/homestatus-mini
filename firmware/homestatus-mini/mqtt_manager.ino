@@ -52,6 +52,7 @@ void reconnectMqttIfNeeded() {
 
   String availabilityTopic = mqttTopic("availability");
   String setTopic = mqttTopic("set");
+  String actionTopic = mqttTopic("action");
 
   Serial.print("Connecting to MQTT broker: ");
   Serial.println(deviceConfig.mqttHost);
@@ -102,6 +103,14 @@ void reconnectMqttIfNeeded() {
     Serial.println(setTopic);
   }
 
+  if (mqttClient.subscribe(actionTopic.c_str())) {
+    Serial.print("MQTT subscribed: ");
+    Serial.println(actionTopic);
+  } else {
+    Serial.print("MQTT subscribe failed: ");
+    Serial.println(actionTopic);
+  }
+
   publishMqttStatus();
 }
 
@@ -110,6 +119,24 @@ void onMqttMessage(char* topic, byte* payload, unsigned int length) {
 
   Serial.print("MQTT message received on ");
   Serial.println(topicText);
+
+  if (topicText == mqttTopic("action")) {
+    StaticJsonDocument<128> actionDoc;
+
+    DeserializationError actionError = deserializeJson(actionDoc, payload, length);
+
+    if (actionError) {
+      Serial.print("MQTT action JSON parse failed: ");
+      Serial.println(actionError.c_str());
+      return;
+    }
+
+    String action = actionDoc["action"] | "";
+    action = limitText(action, 16);
+
+    handleMqttAction(action);
+    return;
+  }
 
   if (topicText != mqttTopic("set")) {
     Serial.println("MQTT topic ignored.");
@@ -277,7 +304,74 @@ void publishHomeAssistantDiscovery() {
     ""
   );
 
+  publishHaButtonDiscovery(
+    baseObjectId + "_acknowledge",
+    "Acknowledge / Clear",
+    mqttTopic("action"),
+    "{\"action\":\"ack\"}",
+    "mdi:check-circle-outline"
+  );
+
   Serial.println("Home Assistant discovery publish attempt complete.");
+}
+
+void publishHaButtonDiscovery(
+  String objectId,
+  String name,
+  String commandTopic,
+  String payloadPress,
+  String icon
+) {
+  if (!isMqttReady()) {
+    return;
+  }
+
+  String discoveryTopic = "homeassistant/button/";
+  discoveryTopic += objectId;
+  discoveryTopic += "/config";
+
+  String availabilityTopic = mqttTopic("availability");
+
+  StaticJsonDocument<768> doc;
+
+  doc["name"] = name;
+  doc["unique_id"] = objectId;
+  doc["command_topic"] = commandTopic;
+  doc["payload_press"] = payloadPress;
+  doc["availability_topic"] = availabilityTopic;
+  doc["icon"] = icon;
+
+  JsonObject device = doc.createNestedObject("device");
+  device["identifiers"][0] = haSafeObjectId(getDeviceName());
+  device["name"] = getDeviceName();
+  device["manufacturer"] = "HomeStatus";
+  device["model"] = "HomeStatus Mini";
+
+  char buffer[768];
+  size_t length = serializeJson(doc, buffer, sizeof(buffer));
+
+  bool published = mqttClient.publish(
+    discoveryTopic.c_str(),
+    reinterpret_cast<const uint8_t*>(buffer),
+    length,
+    true
+  );
+
+  if (!published) {
+    Serial.print("HA button discovery publish failed: ");
+    Serial.println(discoveryTopic);
+    Serial.print("Payload length: ");
+    Serial.println(length);
+    Serial.print("MQTT state: ");
+    Serial.print(mqttClient.state());
+    Serial.print(" ");
+    Serial.println(mqttStateToString(mqttClient.state()));
+  } else {
+    Serial.print("HA button discovery published: ");
+    Serial.println(discoveryTopic);
+    Serial.print("HA button discovery payload size: ");
+    Serial.println(length);
+  }
 }
 
 void publishHaSensorDiscovery(
@@ -349,6 +443,8 @@ void publishHaSensorDiscovery(
   }
 }
 
+
+
 String haSafeObjectId(String value) {
   value.toLowerCase();
   value.trim();
@@ -382,4 +478,20 @@ String haSafeObjectId(String value) {
   }
 
   return result;
+}
+
+void handleMqttAction(String action) {
+  action.toLowerCase();
+  action.trim();
+
+  if (action == "ack" || action == "acknowledge" || action == "clear") {
+    Serial.print("MQTT action received: ");
+    Serial.println(action);
+
+    onButtonPressed();
+    return;
+  }
+
+  Serial.print("Unknown MQTT action: ");
+  Serial.println(action);
 }

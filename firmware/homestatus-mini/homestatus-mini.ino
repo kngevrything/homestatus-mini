@@ -256,6 +256,16 @@ void publishHomeAssistantDiscovery();
 void publishHaSensorDiscovery(String objectId, String name, String valueTemplate, String icon, String unitOfMeasurement);
 String haSafeObjectId(String value);
 
+void publishHaButtonDiscovery(
+  String objectId,
+  String name,
+  String commandTopic,
+  String payloadPress,
+  String icon
+);
+
+void handleMqttAction(String action);
+
 
 // -----------------------------------------------------------------------------
 // Status state
