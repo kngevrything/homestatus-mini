@@ -252,6 +252,11 @@ bool isMqttReady();
 WiFiClient mqttWifiClient;
 PubSubClient mqttClient(mqttWifiClient);
 
+void publishHomeAssistantDiscovery();
+void publishHaSensorDiscovery(String objectId, String name, String valueTemplate, String icon, String unitOfMeasurement);
+String haSafeObjectId(String value);
+
+
 // -----------------------------------------------------------------------------
 // Status state
 // -----------------------------------------------------------------------------

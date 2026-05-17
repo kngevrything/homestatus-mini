@@ -259,6 +259,8 @@ void handleHealth() {
   json += "\"mqttConnected\":";
   json += mqttClient.connected() ? "true" : "false";
   json += ",";
+  
+  json += "\"homeAssistantDiscovery\":\"enabled\",";
   json += "\"wifiStatus\":\"" + wifiStatusToString(WiFi.status()) + "\",";
   json += "\"ip\":\"" + WiFi.localIP().toString() + "\",";
   json += "\"level\":\"" + statusLevelToString(currentStatus.level) + "\",";

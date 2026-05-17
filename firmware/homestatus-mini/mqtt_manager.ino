@@ -6,6 +6,7 @@ void setupMqtt() {
 
   mqttClient.setServer(deviceConfig.mqttHost.c_str(), deviceConfig.mqttPort);
   mqttClient.setCallback(onMqttMessage);
+  mqttClient.setBufferSize(1024);
 
   Serial.println("MQTT configured.");
   Serial.print("  Host: ");
@@ -91,7 +92,8 @@ void reconnectMqttIfNeeded() {
   Serial.println("MQTT connected.");
 
   publishMqttAvailability("online");
-
+  publishHomeAssistantDiscovery();
+  
   if (mqttClient.subscribe(setTopic.c_str())) {
     Serial.print("MQTT subscribed: ");
     Serial.println(setTopic);
@@ -157,7 +159,7 @@ void publishMqttStatus() {
   doc["title"] = currentStatus.title;
   doc["mainText"] = currentStatus.mainText;
   doc["footer"] = currentStatus.footer;
-  doc["uptimeMs"] = millis();
+  doc["uptimeSeconds"] = millis() / 1000;
 
   char buffer[256];
   size_t length = serializeJson(doc, buffer, sizeof(buffer));
@@ -230,4 +232,154 @@ String mqttStateToString(int state) {
     default:
       return "MQTT_UNKNOWN";
   }
+}
+
+void publishHomeAssistantDiscovery() {
+  if (!isMqttReady()) {
+    return;
+  }
+
+  String baseObjectId = haSafeObjectId(getDeviceName());
+
+  publishHaSensorDiscovery(
+    baseObjectId + "_level",
+    "Level",
+    "{{ value_json.level }}",
+    "mdi:alert-circle-outline",
+    "",
+    ""
+  );
+
+  publishHaSensorDiscovery(
+    baseObjectId + "_title",
+    "Title",
+    "{{ value_json.title }}",
+    "mdi:format-title",
+    "",
+    ""
+  );
+
+  publishHaSensorDiscovery(
+    baseObjectId + "_main",
+    "Main",
+    "{{ value_json.mainText }}",
+    "mdi:text-short",
+    "",
+    ""
+  );
+
+  publishHaSensorDiscovery(
+    baseObjectId + "_footer",
+    "Footer",
+    "{{ value_json.footer }}",
+    "mdi:text",
+    "",
+    ""
+  );
+
+  Serial.println("Home Assistant discovery publish attempt complete.");
+}
+
+void publishHaSensorDiscovery(
+  String objectId,
+  String name,
+  String valueTemplate,
+  String icon,
+  String unitOfMeasurement,
+  String deviceClass
+) {
+  if (!isMqttReady()) {
+    return;
+  }
+
+  String discoveryTopic = "homeassistant/sensor/";
+  discoveryTopic += objectId;
+  discoveryTopic += "/config";
+
+  String statusTopic = mqttTopic("status");
+  String availabilityTopic = mqttTopic("availability");
+
+  StaticJsonDocument<768> doc;
+
+  doc["name"] = name;
+  doc["unique_id"] = objectId;
+  doc["state_topic"] = statusTopic;
+  doc["availability_topic"] = availabilityTopic;
+  doc["value_template"] = valueTemplate;
+  doc["icon"] = icon;
+
+  if (unitOfMeasurement.length() > 0) {
+    doc["unit_of_measurement"] = unitOfMeasurement;
+  }
+
+  if (deviceClass.length() > 0) {
+    doc["device_class"] = deviceClass;
+  }
+
+  JsonObject device = doc.createNestedObject("device");
+  device["identifiers"][0] = haSafeObjectId(getDeviceName());
+  device["name"] = getDeviceName();
+  device["manufacturer"] = "HomeStatus";
+  device["model"] = "HomeStatus Mini";
+
+  char buffer[768];
+  size_t length = serializeJson(doc, buffer, sizeof(buffer));
+
+  bool published = mqttClient.publish(
+    discoveryTopic.c_str(),
+    reinterpret_cast<const uint8_t*>(buffer),
+    length,
+    true
+  );
+
+  if (!published) {
+    Serial.print("HA discovery publish failed: ");
+    Serial.println(discoveryTopic);
+    Serial.print("Payload length: ");
+    Serial.println(length);
+    Serial.print("MQTT state: ");
+    Serial.print(mqttClient.state());
+    Serial.print(" ");
+    Serial.println(mqttStateToString(mqttClient.state()));
+  } else {
+    Serial.print("HA discovery published: ");
+    Serial.println(discoveryTopic);
+    Serial.print("HA discovery payload size: ");
+    Serial.println(length);
+  }
+}
+
+String haSafeObjectId(String value) {
+  value.toLowerCase();
+  value.trim();
+
+  String result = "";
+
+  for (int i = 0; i < value.length(); i++) {
+    char c = value.charAt(i);
+
+    if ((c >= 'a' && c <= 'z') || (c >= '0' && c <= '9')) {
+      result += c;
+    } else {
+      result += "_";
+    }
+  }
+
+  while (result.indexOf("__") >= 0) {
+    result.replace("__", "_");
+  }
+
+  while (result.startsWith("_")) {
+    result.remove(0, 1);
+  }
+
+  while (result.endsWith("_")) {
+    result.remove(result.length() - 1);
+  }
+
+  if (result.length() == 0) {
+    result = "homestatus_mini";
+  }
+
+  return result;
 }
