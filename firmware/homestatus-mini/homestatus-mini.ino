@@ -61,6 +61,7 @@ enum StatusLevel {
 
 struct StatusScreen {
   StatusLevel level;
+  String source;
   String title;
   String mainText;
   String footer;
@@ -123,6 +124,7 @@ DeviceConfig deviceConfig = {
 
 StatusScreen currentStatus = {
   STATUS_OK,
+  "",
   "HOME",
   "All Good",
   "No alerts"
@@ -252,6 +254,17 @@ bool isMqttReady();
 WiFiClient mqttWifiClient;
 PubSubClient mqttClient(mqttWifiClient);
 
+void handleMqttAction(String action);
+void handleMqttLevelSet(String levelText);
+
+// -----------------------------------------------------------------------------
+// Home Assistant MQTT discovery
+// See https://www.home-assistant.io/docs/mqtt/discovery/
+// For select entities: https://www.home-assistant.io/integrations/select.mqtt/
+// For buttons: https://www.home-assistant.io/integrations/button.mqtt/
+// Note: Home Assistant's MQTT discovery does not support sensors with multiple states, so we use a select entity to represent the status level.
+// The select entity's options represent the possible status levels. The state is updated to match the current status level, and commands to change the select's state are used to set the status level with priority handling.
+// ------------------------------------------------------------------------------
 void publishHomeAssistantDiscovery();
 void publishHaSensorDiscovery(String objectId, String name, String valueTemplate, String icon, String unitOfMeasurement);
 String haSafeObjectId(String value);
@@ -264,8 +277,6 @@ void publishHaButtonDiscovery(
   String icon
 );
 
-void handleMqttAction(String action);
-
 void publishHaSelectDiscovery(
   String objectId,
   String name,
@@ -275,17 +286,38 @@ void publishHaSelectDiscovery(
   String icon
 );
 
-void handleMqttLevelSet(String levelText);
-
-
-// -----------------------------------------------------------------------------
-// Status state
-// -----------------------------------------------------------------------------
 
 bool tryParseStatusLevel(String levelText, StatusLevel& level);
 
 void setStatus(StatusLevel level, String title, String mainText, String footer);
 void setStatus(StatusLevel level, String title, String mainText, String footer, bool logUpdate);
+
+void setStatus(
+  StatusLevel level,
+  String source,
+  String title,
+  String mainText,
+  String footer
+);
+
+void setStatus(
+  StatusLevel level,
+  String source,
+  String title,
+  String mainText,
+  String footer,
+  bool logUpdate
+);
+
+bool setStatusWithPriority(
+  StatusLevel level,
+  String source,
+  String title,
+  String mainText,
+  String footer
+);
+
+bool shouldAcceptClear(String incomingSource);
 
 void setDefaultOk();
 

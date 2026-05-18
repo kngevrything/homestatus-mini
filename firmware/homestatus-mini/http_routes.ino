@@ -169,6 +169,7 @@ void handleStatusJson() {
   json += "{";
   json += "\"device\":\"" + String(getDeviceName()) + "\",";
   json += "\"level\":\"" + statusLevelToString(currentStatus.level) + "\",";
+  json += "\"source\":\"" + escapeJson(currentStatus.source) + "\",";
   json += "\"title\":\"" + escapeJson(currentStatus.title) + "\",";
   json += "\"mainText\":\"" + escapeJson(currentStatus.mainText) + "\",";
   json += "\"footer\":\"" + escapeJson(currentStatus.footer) + "\",";
@@ -303,6 +304,7 @@ void handleSetFromHttp() {
   }
 
   String levelText = limitText(server.arg("level"), 16);
+  String source = limitedTextArg("source", "", 24);
   String title = limitedTextArg("title", "HOME", 12);
   String mainText = limitedTextArg("main", "Updated", 18);
   String footer = limitedTextArg("footer", "HTTP", 18);
@@ -314,10 +316,12 @@ void handleSetFromHttp() {
     return;
   }
 
-  bool accepted = setStatusWithPriority(level, title, mainText, footer);
+  bool accepted = setStatusWithPriority(level, source, title, mainText, footer);
 
-  String response = accepted ? "Status updated: " : "Status ignored due to priority: ";
+  String response = accepted ? "Status updated: " : "Status ignored: ";
   response += statusLevelToString(level);
+  response += " / source=";
+  response += source;
   response += " / ";
   response += title;
   response += " / ";

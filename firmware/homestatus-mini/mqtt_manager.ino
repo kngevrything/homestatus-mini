@@ -175,11 +175,13 @@ void onMqttMessage(char* topic, byte* payload, unsigned int length) {
   }
 
   String levelText = doc["level"] | "";
+  String source = doc["source"] | "";
   String title = doc["title"] | "HOME";
   String mainText = doc["main"] | "Updated";
   String footer = doc["footer"] | "MQTT";
 
   levelText = limitText(levelText, 16);
+  source = limitText(source, 24);
   title = limitText(title, 12);
   mainText = limitText(mainText, 18);
   footer = limitText(footer, 18);
@@ -192,7 +194,20 @@ void onMqttMessage(char* topic, byte* payload, unsigned int length) {
     return;
   }
 
-  setStatusWithPriority(level, title, mainText, footer);
+  if (level == STATUS_OK) {
+    if (!doc["title"].is<const char*>()) {
+      title = "HOME";
+    }
+
+    if (!doc["main"].is<const char*>()) {
+      mainText = "All Good";
+    }
+
+    if (!doc["footer"].is<const char*>()) {
+      footer = "No alerts";
+    }
+  }
+  setStatusWithPriority(level, source, title, mainText, footer);
 }
 
 void publishMqttStatus() {
@@ -204,6 +219,7 @@ void publishMqttStatus() {
 
   doc["device"] = getDeviceName();
   doc["level"] = statusLevelToString(currentStatus.level);
+  doc["source"] = currentStatus.source;
   doc["title"] = currentStatus.title;
   doc["mainText"] = currentStatus.mainText;
   doc["footer"] = currentStatus.footer;
@@ -306,6 +322,16 @@ void publishHomeAssistantDiscovery() {
     "",
     ""
   );
+  
+  publishHaSensorDiscovery(
+    baseObjectId + "_source",
+    "Source",
+    "{{ value_json.source }}",
+    "mdi:source-branch",
+    "",
+    ""
+  );
+
 
   publishHaSensorDiscovery(
     baseObjectId + "_main",

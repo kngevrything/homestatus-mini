@@ -77,6 +77,7 @@ data:
   payload: >
     {
       "level": "alert",
+      "source": "garage",
       "title": "GARAGE",
       "main": "Open too long",
       "footer": "Check door"
@@ -368,3 +369,38 @@ payload: >
 - The device publishes retained status and availability messages.
 - The MQTT base topic can be changed during device setup.
 - If the base topic changes, update the examples to match the new topic.
+
+## Source-Aware Clearing
+
+Status messages can include an optional `source`.
+
+Example:
+
+```json
+{
+  "level": "alert",
+  "source": "garage",
+  "title": "GARAGE",
+  "main": "Open too long",
+  "footer": "Check door"
+}
+```
+
+A source-specific clear only clears the display if the current status has the same source:
+
+```json
+{
+  "level": "ok",
+  "source": "garage"
+}
+```
+
+An `ok` message without a source clears everything:
+
+```json
+{
+  "level": "ok"
+}
+```
+
+This prevents one automation from accidentally clearing another automation's active alert.
