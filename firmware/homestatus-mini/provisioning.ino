@@ -145,12 +145,13 @@ void handleSetupSave() {
 
   saveDeviceConfig(ssid, password, deviceName, apiKey);
 
-  bool mqttEnabled = server.hasArg("mqttEnabled");
-  String mqttHost = limitText(server.arg("mqttHost"), 64);
+  bool mqttEnabled = server.hasArg("mqttEnabled") && server.arg("mqttEnabled") == "1";
+                      
+  String mqttHost = server.hasArg("mqttHost") ? limitText(server.arg("mqttHost"), 64) : "";
   int mqttPort = server.hasArg("mqttPort") ? server.arg("mqttPort").toInt() : 1883;
-  String mqttUsername = limitText(server.arg("mqttUsername"), 64);
-  String mqttPassword = limitText(server.arg("mqttPassword"), 64);
-  String mqttBaseTopic = limitText(server.arg("mqttBaseTopic"), 64);
+  String mqttUsername = server.hasArg("mqttUsername") ? limitText(server.arg("mqttUsername"), 64) : "";
+  String mqttPassword = server.hasArg("mqttPassword") ? limitText(server.arg("mqttPassword"), 64) : "";
+  String mqttBaseTopic = server.hasArg("mqttBaseTopic") ? limitText(server.arg("mqttBaseTopic"), 64) : "";
 
   if (mqttPort <= 0) {
     mqttPort = 1883;

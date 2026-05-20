@@ -4,6 +4,16 @@ void setupPins() {
   pinMode(RED_PIN, OUTPUT);
   pinMode(GREEN_PIN, OUTPUT);
   pinMode(BLUE_PIN, OUTPUT);
+
+}
+
+void normalizeStatusText(String& source, String& title, String& mainText, String& footer) {
+  source = limitText(source, MAX_SOURCE_CHARS);
+  title = limitText(title, MAX_TITLE_CHARS);
+  mainText = limitText(mainText, MAX_MAIN_CHARS);
+  footer = limitText(footer, MAX_FOOTER_CHARS);
+
+  source.toLowerCase();
 }
 
 // -----------------------------------------------------------------------------
@@ -62,7 +72,7 @@ void setStatus(
   String footer,
   bool logUpdate
 ) {
-  source.trim();
+  normalizeStatusText(source, title, mainText, footer);
 
   currentStatus.level = level;
   currentStatus.source = source;
@@ -90,6 +100,27 @@ void setStatus(
     Serial.print(" / ");
     Serial.println(footer);
   }
+}
+
+void writeStatusJson(JsonDocument& doc) {
+  doc["device"] = getDeviceName();
+  doc["level"] = statusLevelToString(currentStatus.level);
+  doc["source"] = currentStatus.source;
+  doc["title"] = currentStatus.title;
+  doc["mainText"] = currentStatus.mainText;
+  doc["footer"] = currentStatus.footer;
+  doc["uptimeSeconds"] = millis() / 1000;
+}
+
+String buildStatusJson() {
+  StaticJsonDocument<256> doc;
+
+  writeStatusJson(doc);
+
+  String json;
+  serializeJson(doc, json);
+
+  return json;
 }
 
 // -----------------------------------------------------------------------------

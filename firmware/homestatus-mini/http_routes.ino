@@ -21,14 +21,6 @@ bool hasValidApiKey() {
   return providedKey == getApiKey();
 }
 
-String limitedTextArg(const String& name, const String& fallback, int maxLength) {
-  if (!server.hasArg(name)) {
-    return fallback;
-  }
-
-  return limitText(server.arg(name), maxLength);
-}
-
 String limitText(String value, int maxLength) {
   value.trim();
 
@@ -164,19 +156,7 @@ void handleRoot() {
 }
 
 void handleStatusJson() {
-  String json = "";
-
-  json += "{";
-  json += "\"device\":\"" + String(getDeviceName()) + "\",";
-  json += "\"level\":\"" + statusLevelToString(currentStatus.level) + "\",";
-  json += "\"source\":\"" + escapeJson(currentStatus.source) + "\",";
-  json += "\"title\":\"" + escapeJson(currentStatus.title) + "\",";
-  json += "\"mainText\":\"" + escapeJson(currentStatus.mainText) + "\",";
-  json += "\"footer\":\"" + escapeJson(currentStatus.footer) + "\",";
-  json += "\"ip\":\"" + WiFi.localIP().toString() + "\"";
-  json += "}";
-
-  server.send(200, "application/json", json);
+  server.send(200, "application/json", buildStatusJson());
 }
 
 void handleConfigJson() {
@@ -303,11 +283,11 @@ void handleSetFromHttp() {
     return;
   }
 
-  String levelText = limitText(server.arg("level"), 16);
-  String source = limitedTextArg("source", "", 24);
-  String title = limitedTextArg("title", "HOME", 12);
-  String mainText = limitedTextArg("main", "Updated", 18);
-  String footer = limitedTextArg("footer", "HTTP", 18);
+  String levelText = limitText(server.arg("level"), MAX_LEVEL_CHARS);
+  String source = server.hasArg("source") ? server.arg("source") : "";
+  String title = server.hasArg("title") ? server.arg("title") : "HOME";
+  String mainText = server.hasArg("main") ? server.arg("main") : "Updated";
+  String footer = server.hasArg("footer") ? server.arg("footer") : "HTTP";
 
   StatusLevel level;
 

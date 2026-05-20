@@ -28,6 +28,14 @@ const int GREEN_PIN = 25;
 const int RED_PIN   = 26;
 const int BLUE_PIN  = 27;
 
+const int MAX_LEVEL_CHARS = 16;
+const int MAX_SOURCE_CHARS = 24;
+const int MAX_TITLE_CHARS = 21;
+const int MAX_MAIN_CHARS = 42;
+const int MAX_FOOTER_CHARS = 21;
+
+void normalizeStatusText(String& source, String& title, String& mainText, String& footer);
+
 const unsigned long BUTTON_DEBOUNCE_MS = 50;
 const unsigned long FACTORY_RESET_HOLD_MS = 8000;
 
@@ -206,6 +214,9 @@ void handleConfigJson();
 
 void sendPlain(String message);
 
+void writeStatusJson(JsonDocument& doc);
+String buildStatusJson();
+
 // -----------------------------------------------------------------------------
 // HTTP security and input validation
 // -----------------------------------------------------------------------------
@@ -213,7 +224,6 @@ void sendPlain(String message);
 bool requireApiKey();
 bool hasValidApiKey();
 
-String limitedTextArg(const String& name, const String& fallback, int maxLength);
 String limitText(String value, int maxLength);
 
 // -----------------------------------------------------------------------------

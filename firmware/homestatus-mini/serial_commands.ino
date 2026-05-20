@@ -113,12 +113,8 @@ void processSetCommand(String command) {
     return;
   }
 
-  levelText = limitText(levelText, 16);
-  source = limitText(source, 24);
-  title = limitText(title, 12);
-  mainText = limitText(mainText, 18);
-  footer = limitText(footer, 18);
-
+  levelText = limitText(levelText, MAX_LEVEL_CHARS);
+  
   StatusLevel level;
 
   if (!tryParseStatusLevel(levelText, level)) {

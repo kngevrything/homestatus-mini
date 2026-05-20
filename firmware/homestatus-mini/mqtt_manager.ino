@@ -136,7 +136,7 @@ void onMqttMessage(char* topic, byte* payload, unsigned int length) {
       levelText += (char)payload[i];
     }
 
-    levelText = limitText(levelText, 16);
+    levelText = limitText(levelText, MAX_LEVEL_CHARS);
     handleMqttLevelSet(levelText);
     return;
   }
@@ -153,7 +153,7 @@ void onMqttMessage(char* topic, byte* payload, unsigned int length) {
     }
 
     String action = actionDoc["action"] | "";
-    action = limitText(action, 16);
+    action = limitText(action, MAX_LEVEL_CHARS);
 
     handleMqttAction(action);
     return;
@@ -180,11 +180,7 @@ void onMqttMessage(char* topic, byte* payload, unsigned int length) {
   String mainText = doc["main"] | "Updated";
   String footer = doc["footer"] | "MQTT";
 
-  levelText = limitText(levelText, 16);
-  source = limitText(source, 24);
-  title = limitText(title, 12);
-  mainText = limitText(mainText, 18);
-  footer = limitText(footer, 18);
+  levelText = limitText(levelText, MAX_LEVEL_CHARS);
 
   StatusLevel level;
 
@@ -207,6 +203,7 @@ void onMqttMessage(char* topic, byte* payload, unsigned int length) {
       footer = "No alerts";
     }
   }
+
   setStatusWithPriority(level, source, title, mainText, footer);
 }
 
@@ -217,13 +214,7 @@ void publishMqttStatus() {
 
   StaticJsonDocument<256> doc;
 
-  doc["device"] = getDeviceName();
-  doc["level"] = statusLevelToString(currentStatus.level);
-  doc["source"] = currentStatus.source;
-  doc["title"] = currentStatus.title;
-  doc["mainText"] = currentStatus.mainText;
-  doc["footer"] = currentStatus.footer;
-  doc["uptimeSeconds"] = millis() / 1000;
+  writeStatusJson(doc);
 
   char buffer[256];
   size_t length = serializeJson(doc, buffer, sizeof(buffer));
