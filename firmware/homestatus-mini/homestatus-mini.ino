@@ -259,6 +259,7 @@ void publishMqttAvailability(const char* availability);
 String mqttStateToString(int state);
 
 String mqttTopic(String suffix);
+bool subscribeMqttTopic(String topic);
 bool isMqttReady();
 
 WiFiClient mqttWifiClient;
@@ -266,6 +267,8 @@ PubSubClient mqttClient(mqttWifiClient);
 
 void handleMqttAction(String action);
 void handleMqttLevelSet(String levelText);
+
+
 
 // -----------------------------------------------------------------------------
 // Home Assistant MQTT discovery
@@ -277,6 +280,9 @@ void handleMqttLevelSet(String levelText);
 // ------------------------------------------------------------------------------
 void publishHomeAssistantDiscovery();
 void publishHaSensorDiscovery(String objectId, String name, String valueTemplate, String icon, String unitOfMeasurement);
+
+void addHaDeviceInfo(JsonObject device);
+
 String haSafeObjectId(String value);
 
 void publishHaButtonDiscovery(

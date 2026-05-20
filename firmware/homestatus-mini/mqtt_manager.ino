@@ -96,29 +96,9 @@ void reconnectMqttIfNeeded() {
   publishMqttAvailability("online");
   publishHomeAssistantDiscovery();
   
-  if (mqttClient.subscribe(setTopic.c_str())) {
-    Serial.print("MQTT subscribed: ");
-    Serial.println(setTopic);
-  } else {
-    Serial.print("MQTT subscribe failed: ");
-    Serial.println(setTopic);
-  }
-
-  if (mqttClient.subscribe(actionTopic.c_str())) {
-    Serial.print("MQTT subscribed: ");
-    Serial.println(actionTopic);
-  } else {
-    Serial.print("MQTT subscribe failed: ");
-    Serial.println(actionTopic);
-  }
-
-  if (mqttClient.subscribe(levelSetTopic.c_str())) {
-    Serial.print("MQTT subscribed: ");
-    Serial.println(levelSetTopic);
-  } else {
-    Serial.print("MQTT subscribe failed: ");
-    Serial.println(levelSetTopic);
-  }
+  subscribeMqttTopic(setTopic);
+  subscribeMqttTopic(actionTopic);
+  subscribeMqttTopic(levelSetTopic);
 
   publishMqttStatus();
 }
@@ -231,6 +211,20 @@ void publishMqttStatus() {
   if (!published) {
     Serial.println("MQTT status publish failed.");
   }
+}
+
+bool subscribeMqttTopic(String topic) {
+  bool subscribed = mqttClient.subscribe(topic.c_str());
+
+  if (subscribed) {
+    Serial.print("MQTT subscribed: ");
+    Serial.println(topic);
+  } else {
+    Serial.print("MQTT subscribe failed: ");
+    Serial.println(topic);
+  }
+
+  return subscribed;
 }
 
 void publishMqttAvailability(const char* availability) {
@@ -389,10 +383,7 @@ void publishHaButtonDiscovery(
   doc["icon"] = icon;
 
   JsonObject device = doc.createNestedObject("device");
-  device["identifiers"][0] = haSafeObjectId(getDeviceName());
-  device["name"] = getDeviceName();
-  device["manufacturer"] = "HomeStatus";
-  device["model"] = "HomeStatus Mini";
+  addHaDeviceInfo(device);
 
   char buffer[768];
   size_t length = serializeJson(doc, buffer, sizeof(buffer));
@@ -458,10 +449,7 @@ void publishHaSensorDiscovery(
   }
 
   JsonObject device = doc.createNestedObject("device");
-  device["identifiers"][0] = haSafeObjectId(getDeviceName());
-  device["name"] = getDeviceName();
-  device["manufacturer"] = "HomeStatus";
-  device["model"] = "HomeStatus Mini";
+  addHaDeviceInfo(device);
 
   char buffer[768];
   size_t length = serializeJson(doc, buffer, sizeof(buffer));
@@ -574,6 +562,13 @@ void handleMqttLevelSet(String levelText) {
   Serial.println(levelText);
 }
 
+void addHaDeviceInfo(JsonObject device) {
+  device["identifiers"][0] = haSafeObjectId(getDeviceName());
+  device["name"] = getDeviceName();
+  device["manufacturer"] = "HomeStatus";
+  device["model"] = "HomeStatus Mini";
+}
+
 void publishHaSelectDiscovery(
   String objectId,
   String name,
@@ -609,10 +604,7 @@ void publishHaSelectDiscovery(
   options.add("info");
 
   JsonObject device = doc.createNestedObject("device");
-  device["identifiers"][0] = haSafeObjectId(getDeviceName());
-  device["name"] = getDeviceName();
-  device["manufacturer"] = "HomeStatus";
-  device["model"] = "HomeStatus Mini";
+  addHaDeviceInfo(device);
 
   char buffer[1024];
   size_t length = serializeJson(doc, buffer, sizeof(buffer));
