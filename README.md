@@ -1,12 +1,12 @@
 # HomeStatus Mini
 
-HomeStatus Mini is a local-first ESP32 status display for home automation, homelab monitoring, and MQTT/Home Assistant workflows.
+HomeStatus Mini is a local-first ESP32 status display for home automation, homelab monitoring, and Home Assistant / MQTT workflows.
 
 It uses a small OLED screen, RGB status LED, and physical acknowledge button to show simple household or system states such as OK, warning, alert, info, and acknowledged.
 
-The device supports:
+The project is currently prototype firmware, but the core flow works:
 
-- Wi-Fi setup mode
+- First-time Wi-Fi setup mode
 - OLED status display
 - RGB status LED
 - Physical acknowledge / clear button
@@ -17,8 +17,6 @@ The device supports:
 - Source-aware status clearing
 - Message priority handling
 - Long-press factory reset
-
-This is prototype firmware, but it is functional.
 
 ## Current Hardware
 
@@ -48,7 +46,7 @@ Install the ESP32 board package:
 
 - ESP32 by Espressif Systems
 
-Install these Arduino libraries:
+Install these Arduino libraries through the Arduino Library Manager:
 
 - Adafruit SSD1306
 - Adafruit GFX Library
@@ -61,19 +59,23 @@ No firmware secrets are required before compiling.
 
 When no saved Wi-Fi configuration exists, HomeStatus Mini starts a temporary setup access point:
 
-````text
+```text
 SSID: HomeStatus-Setup
 Password: homestatus
 Setup URL: http://192.168.99.1
+```
 
 Setup flow:
 
-1. Power on the ESP32.
-2. Connect your phone or computer to `HomeStatus-Setup`.
-3. Open `http://192.168.99.1`.
-4. Enter Wi-Fi, device name, API key, and optional MQTT settings.
-5. Save the form.
-6. The device reboots and connects to your Wi-Fi network.
+1. Flash the firmware to the ESP32.
+2. Power on the device.
+3. Connect your phone or computer to `HomeStatus-Setup`.
+4. Open `http://192.168.99.1`.
+5. Enter Wi-Fi, device name, API key, and optional MQTT settings.
+6. Save the form.
+7. The device reboots and connects to your Wi-Fi network.
+
+Settings are stored in ESP32 Preferences.
 
 ## Physical Button
 
@@ -92,7 +94,7 @@ Setup flow:
 | `info`    | Blue   | Informational state                    |
 | `acked`   | Yellow | Alert was acknowledged but not cleared |
 
-## Priority Handling
+## Message Priority
 
 HomeStatus Mini protects higher-priority messages from being overwritten by lower-priority automation updates.
 
@@ -100,13 +102,13 @@ Priority order:
 
 ```text
 alert / acked > warning > info > ok
-````
+```
 
 `ok` is treated as an explicit clear.
 
 ## Source-Aware Clearing
 
-Status messages can include an optional source.
+Status messages can include an optional `source`.
 
 Example:
 
@@ -240,6 +242,23 @@ Custom status payload:
 }
 ```
 
+Source-specific clear:
+
+```json
+{
+  "level": "ok",
+  "source": "garage"
+}
+```
+
+Global clear:
+
+```json
+{
+  "level": "ok"
+}
+```
+
 Action payload:
 
 ```json
@@ -262,6 +281,8 @@ warning
 alert
 info
 ```
+
+Do not retain command messages on `set`, `level/set`, or `action`.
 
 ## Home Assistant
 
@@ -298,6 +319,7 @@ HomeStatus Mini is intended for trusted local networks.
 - Stored credentials are not encrypted.
 - Do not expose the device directly to the internet.
 - Use a dedicated MQTT user with limited permissions when possible.
+- Factory reset the device before giving it to someone else.
 
 ## Known Limitations
 
@@ -307,7 +329,9 @@ HomeStatus Mini is intended for trusted local networks.
 - No TLS support for HTTP or MQTT yet.
 - Setup AP uses a shared default password.
 - Display text is optimized for short status messages.
-- No alert queue yet. Lower-priority messages may be ignored when a higher-priority status is active.
+- The device currently displays one active status at a time.
+- Lower-priority messages can be blocked by higher-priority messages and are not queued for later display.
+- A future version may add a source-keyed status registry for multiple active sources.
 - Hardware enclosure is not finalized.
 
 ## Project Structure
@@ -328,6 +352,18 @@ firmware/homestatus-mini/
 docs/
   home-assistant.md
 ```
+
+## Roadmap
+
+Possible future work:
+
+- Source-keyed status registry for multiple active sources
+- Alert expiration / stale message handling
+- Optional alert queue behavior
+- OTA firmware updates
+- Enclosure design
+- Cleaner logging controls with a debug flag
+- Optional TLS support
 
 ## License
 
