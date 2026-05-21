@@ -103,7 +103,7 @@ void checkWifiConnection() {
     Serial.println(WiFi.localIP());
 
     publishMqttStatus();
-    
+
   } else {
     Serial.print("Wi-Fi reconnect failed. Status: ");
     Serial.print(WiFi.status());

@@ -4,7 +4,6 @@ void setupPins() {
   pinMode(RED_PIN, OUTPUT);
   pinMode(GREEN_PIN, OUTPUT);
   pinMode(BLUE_PIN, OUTPUT);
-
 }
 
 void normalizeStatusText(String& source, String& title, String& mainText, String& footer) {
@@ -64,14 +63,8 @@ void setStatus(StatusLevel level, String source, String title, String mainText, 
   setStatus(level, source, title, mainText, footer, true);
 }
 
-void setStatus(
-  StatusLevel level,
-  String source,
-  String title,
-  String mainText,
-  String footer,
-  bool logUpdate
-) {
+void setStatus(StatusLevel level, String source, String title, String mainText, String footer,
+               bool logUpdate) {
   normalizeStatusText(source, title, mainText, footer);
 
   currentStatus.level = level;
@@ -127,13 +120,8 @@ String buildStatusJson() {
 // Priority-aware status setters
 // -----------------------------------------------------------------------------
 
-bool setStatusWithPriority(
-  StatusLevel level,
-  String source,
-  String title,
-  String mainText,
-  String footer
-) {
+bool setStatusWithPriority(StatusLevel level, String source, String title, String mainText,
+                           String footer) {
   source.trim();
 
   if (level == STATUS_OK) {

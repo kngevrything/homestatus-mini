@@ -50,9 +50,7 @@ void setupProvisioningRoutes() {
   server.on("/setup", HTTP_GET, handleSetupRoot);
   server.on("/save", HTTP_POST, handleSetupSave);
 
-  server.onNotFound([]() {
-    server.send(404, "text/plain", "Setup route not found");
-  });
+  server.onNotFound([]() { server.send(404, "text/plain", "Setup route not found"); });
 }
 
 void handleSetupRoot() {
@@ -68,7 +66,9 @@ void handleSetupRoot() {
   html += ".card{border:1px solid #ddd;border-radius:12px;padding:16px;max-width:520px;}";
   html += "label{display:block;margin-top:12px;font-weight:bold;}";
   html += "input{width:100%;box-sizing:border-box;padding:8px;margin-top:4px;}";
-  html += "button{margin-top:16px;padding:10px 14px;border:0;border-radius:8px;background:#111;color:#fff;}";
+  html +=
+      "button{margin-top:16px;padding:10px "
+      "14px;border:0;border-radius:8px;background:#111;color:#fff;}";
   html += "</style>";
   html += "</head>";
   html += "<body>";
@@ -91,7 +91,9 @@ void handleSetupRoot() {
 
   html += "<h2>MQTT Settings</h2>";
   html += "<p style=\"font-size:13px;color:#555;\">";
-  html += "Optional for now. These settings are saved but MQTT connection is not active until the next firmware slice.";
+  html +=
+      "Optional for now. These settings are saved but MQTT connection is not active until the next "
+      "firmware slice.";
   html += "</p>";
 
   html += "<label>";
@@ -146,12 +148,15 @@ void handleSetupSave() {
   saveDeviceConfig(ssid, password, deviceName, apiKey);
 
   bool mqttEnabled = server.hasArg("mqttEnabled") && server.arg("mqttEnabled") == "1";
-                      
+
   String mqttHost = server.hasArg("mqttHost") ? limitText(server.arg("mqttHost"), 64) : "";
   int mqttPort = server.hasArg("mqttPort") ? server.arg("mqttPort").toInt() : 1883;
-  String mqttUsername = server.hasArg("mqttUsername") ? limitText(server.arg("mqttUsername"), 64) : "";
-  String mqttPassword = server.hasArg("mqttPassword") ? limitText(server.arg("mqttPassword"), 64) : "";
-  String mqttBaseTopic = server.hasArg("mqttBaseTopic") ? limitText(server.arg("mqttBaseTopic"), 64) : "";
+  String mqttUsername =
+      server.hasArg("mqttUsername") ? limitText(server.arg("mqttUsername"), 64) : "";
+  String mqttPassword =
+      server.hasArg("mqttPassword") ? limitText(server.arg("mqttPassword"), 64) : "";
+  String mqttBaseTopic =
+      server.hasArg("mqttBaseTopic") ? limitText(server.arg("mqttBaseTopic"), 64) : "";
 
   if (mqttPort <= 0) {
     mqttPort = 1883;

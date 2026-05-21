@@ -61,23 +61,11 @@ void reconnectMqttIfNeeded() {
   bool connected;
 
   if (deviceConfig.mqttUsername.length() > 0) {
-    connected = mqttClient.connect(
-      clientId.c_str(),
-      deviceConfig.mqttUsername.c_str(),
-      deviceConfig.mqttPassword.c_str(),
-      availabilityTopic.c_str(),
-      0,
-      true,
-      "offline"
-    );
+    connected = mqttClient.connect(clientId.c_str(), deviceConfig.mqttUsername.c_str(),
+                                   deviceConfig.mqttPassword.c_str(), availabilityTopic.c_str(), 0,
+                                   true, "offline");
   } else {
-    connected = mqttClient.connect(
-      clientId.c_str(),
-      availabilityTopic.c_str(),
-      0,
-      true,
-      "offline"
-    );
+    connected = mqttClient.connect(clientId.c_str(), availabilityTopic.c_str(), 0, true, "offline");
   }
 
   if (!connected) {
@@ -87,7 +75,7 @@ void reconnectMqttIfNeeded() {
     Serial.print(state);
     Serial.print(" ");
     Serial.println(mqttStateToString(state));
-    
+
     return;
   }
 
@@ -95,7 +83,7 @@ void reconnectMqttIfNeeded() {
 
   publishMqttAvailability("online");
   publishHomeAssistantDiscovery();
-  
+
   subscribeMqttTopic(setTopic);
   subscribeMqttTopic(actionTopic);
   subscribeMqttTopic(levelSetTopic);
@@ -201,12 +189,8 @@ void publishMqttStatus() {
 
   String topic = mqttTopic("status");
 
-  bool published = mqttClient.publish(
-    topic.c_str(),
-    reinterpret_cast<const uint8_t*>(buffer),
-    length,
-    true
-  );
+  bool published =
+      mqttClient.publish(topic.c_str(), reinterpret_cast<const uint8_t*>(buffer), length, true);
 
   if (!published) {
     Serial.println("MQTT status publish failed.");
@@ -290,79 +274,33 @@ void publishHomeAssistantDiscovery() {
 
   String baseObjectId = haSafeObjectId(getDeviceName());
 
-  publishHaSensorDiscovery(
-    baseObjectId + "_level",
-    "Level",
-    "{{ value_json.level }}",
-    "mdi:alert-circle-outline",
-    "",
-    ""
-  );
+  publishHaSensorDiscovery(baseObjectId + "_level", "Level", "{{ value_json.level }}",
+                           "mdi:alert-circle-outline", "", "");
 
-  publishHaSensorDiscovery(
-    baseObjectId + "_title",
-    "Title",
-    "{{ value_json.title }}",
-    "mdi:format-title",
-    "",
-    ""
-  );
-  
-  publishHaSensorDiscovery(
-    baseObjectId + "_source",
-    "Source",
-    "{{ value_json.source }}",
-    "mdi:source-branch",
-    "",
-    ""
-  );
+  publishHaSensorDiscovery(baseObjectId + "_title", "Title", "{{ value_json.title }}",
+                           "mdi:format-title", "", "");
 
+  publishHaSensorDiscovery(baseObjectId + "_source", "Source", "{{ value_json.source }}",
+                           "mdi:source-branch", "", "");
 
-  publishHaSensorDiscovery(
-    baseObjectId + "_main",
-    "Main",
-    "{{ value_json.mainText }}",
-    "mdi:text-short",
-    "",
-    ""
-  );
+  publishHaSensorDiscovery(baseObjectId + "_main", "Main", "{{ value_json.mainText }}",
+                           "mdi:text-short", "", "");
 
-  publishHaSensorDiscovery(
-    baseObjectId + "_footer",
-    "Footer",
-    "{{ value_json.footer }}",
-    "mdi:text",
-    "",
-    ""
-  );
+  publishHaSensorDiscovery(baseObjectId + "_footer", "Footer", "{{ value_json.footer }}",
+                           "mdi:text", "", "");
 
-  publishHaButtonDiscovery(
-    baseObjectId + "_acknowledge",
-    "Acknowledge / Clear",
-    mqttTopic("action"),
-    "{\"action\":\"ack\"}",
-    "mdi:check-circle-outline"
-  );
+  publishHaButtonDiscovery(baseObjectId + "_acknowledge", "Acknowledge / Clear",
+                           mqttTopic("action"), "{\"action\":\"ack\"}", "mdi:check-circle-outline");
 
-  publishHaSelectDiscovery(
-    baseObjectId + "_status_level",
-    "Status Level",
-    mqttTopic("level/set"),
-    mqttTopic("status"),
-    "{{ value_json.level }}",
-    "mdi:format-list-bulleted"
-  );
+  publishHaSelectDiscovery(baseObjectId + "_status_level", "Status Level", mqttTopic("level/set"),
+                           mqttTopic("status"), "{{ value_json.level }}",
+                           "mdi:format-list-bulleted");
 
   Serial.println("Home Assistant discovery publish attempt complete.");
 }
 
-void publishHaButtonDiscovery(
-  String objectId,
-  String name,
-  String commandTopic,
-  String payloadPress,
-  String icon
-) {
+void publishHaButtonDiscovery(String objectId, String name, String commandTopic,
+                              String payloadPress, String icon) {
   if (!isMqttReady()) {
     return;
   }
@@ -388,12 +326,8 @@ void publishHaButtonDiscovery(
   char buffer[768];
   size_t length = serializeJson(doc, buffer, sizeof(buffer));
 
-  bool published = mqttClient.publish(
-    discoveryTopic.c_str(),
-    reinterpret_cast<const uint8_t*>(buffer),
-    length,
-    true
-  );
+  bool published = mqttClient.publish(discoveryTopic.c_str(),
+                                      reinterpret_cast<const uint8_t*>(buffer), length, true);
 
   if (!published) {
     Serial.print("HA button discovery publish failed: ");
@@ -412,14 +346,8 @@ void publishHaButtonDiscovery(
   }
 }
 
-void publishHaSensorDiscovery(
-  String objectId,
-  String name,
-  String valueTemplate,
-  String icon,
-  String unitOfMeasurement,
-  String deviceClass
-) {
+void publishHaSensorDiscovery(String objectId, String name, String valueTemplate, String icon,
+                              String unitOfMeasurement, String deviceClass) {
   if (!isMqttReady()) {
     return;
   }
@@ -454,12 +382,8 @@ void publishHaSensorDiscovery(
   char buffer[768];
   size_t length = serializeJson(doc, buffer, sizeof(buffer));
 
-  bool published = mqttClient.publish(
-    discoveryTopic.c_str(),
-    reinterpret_cast<const uint8_t*>(buffer),
-    length,
-    true
-  );
+  bool published = mqttClient.publish(discoveryTopic.c_str(),
+                                      reinterpret_cast<const uint8_t*>(buffer), length, true);
 
   if (!published) {
     Serial.print("HA discovery publish failed: ");
@@ -477,8 +401,6 @@ void publishHaSensorDiscovery(
     Serial.println(length);
   }
 }
-
-
 
 String haSafeObjectId(String value) {
   value.toLowerCase();
@@ -569,14 +491,8 @@ void addHaDeviceInfo(JsonObject device) {
   device["model"] = "HomeStatus Mini";
 }
 
-void publishHaSelectDiscovery(
-  String objectId,
-  String name,
-  String commandTopic,
-  String stateTopic,
-  String valueTemplate,
-  String icon
-) {
+void publishHaSelectDiscovery(String objectId, String name, String commandTopic, String stateTopic,
+                              String valueTemplate, String icon) {
   if (!isMqttReady()) {
     return;
   }
@@ -609,12 +525,8 @@ void publishHaSelectDiscovery(
   char buffer[1024];
   size_t length = serializeJson(doc, buffer, sizeof(buffer));
 
-  bool published = mqttClient.publish(
-    discoveryTopic.c_str(),
-    reinterpret_cast<const uint8_t*>(buffer),
-    length,
-    true
-  );
+  bool published = mqttClient.publish(discoveryTopic.c_str(),
+                                      reinterpret_cast<const uint8_t*>(buffer), length, true);
 
   if (!published) {
     Serial.print("HA select discovery publish failed: ");

@@ -25,8 +25,8 @@ const int BUTTON_PIN = 18;
 
 // Confirmed RGB channel mapping
 const int GREEN_PIN = 25;
-const int RED_PIN   = 26;
-const int BLUE_PIN  = 27;
+const int RED_PIN = 26;
+const int BLUE_PIN = 27;
 
 const int MAX_LEVEL_CHARS = 16;
 const int MAX_SOURCE_CHARS = 24;
@@ -59,13 +59,7 @@ unsigned long lastWifiCheckMs = 0;
 // Status types
 // -----------------------------------------------------------------------------
 
-enum StatusLevel {
-  STATUS_OK,
-  STATUS_WARNING,
-  STATUS_ALERT,
-  STATUS_INFO,
-  STATUS_ACKED
-};
+enum StatusLevel { STATUS_OK, STATUS_WARNING, STATUS_ALERT, STATUS_INFO, STATUS_ACKED };
 
 struct StatusScreen {
   StatusLevel level;
@@ -117,26 +111,10 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
 WebServer server(80);
 Preferences preferences;
 
-DeviceConfig deviceConfig = {
-  "",
-  "",
-  "homestatus-mini",
-  "",
-  false,
-  "",
-  1883,
-  "",
-  "",
-  "homestatus-mini"
-};
+DeviceConfig deviceConfig = {"", "", "homestatus-mini", "", false, "", 1883,
+                             "", "", "homestatus-mini"};
 
-StatusScreen currentStatus = {
-  STATUS_OK,
-  "",
-  "HOME",
-  "All Good",
-  "No alerts"
-};
+StatusScreen currentStatus = {STATUS_OK, "", "HOME", "All Good", "No alerts"};
 
 bool setupModeActive = false;
 bool lastButtonState = HIGH;
@@ -246,7 +224,8 @@ void printHelp();
 // MQTT
 // -----------------------------------------------------------------------------
 
-void saveMqttConfig(bool enabled, String host, int port, String username, String password, String baseTopic);
+void saveMqttConfig(bool enabled, String host, int port, String username, String password,
+                    String baseTopic);
 bool hasMqttConfig();
 void setupMqtt();
 void handleMqtt();
@@ -268,70 +247,42 @@ PubSubClient mqttClient(mqttWifiClient);
 void handleMqttAction(String action);
 void handleMqttLevelSet(String levelText);
 
-
-
 // -----------------------------------------------------------------------------
 // Home Assistant MQTT discovery
 // See https://www.home-assistant.io/docs/mqtt/discovery/
 // For select entities: https://www.home-assistant.io/integrations/select.mqtt/
 // For buttons: https://www.home-assistant.io/integrations/button.mqtt/
-// Note: Home Assistant's MQTT discovery does not support sensors with multiple states, so we use a select entity to represent the status level.
-// The select entity's options represent the possible status levels. The state is updated to match the current status level, and commands to change the select's state are used to set the status level with priority handling.
+// Note: Home Assistant's MQTT discovery does not support sensors with multiple states, so we use a
+// select entity to represent the status level. The select entity's options represent the possible
+// status levels. The state is updated to match the current status level, and commands to change the
+// select's state are used to set the status level with priority handling.
 // ------------------------------------------------------------------------------
 void publishHomeAssistantDiscovery();
-void publishHaSensorDiscovery(String objectId, String name, String valueTemplate, String icon, String unitOfMeasurement);
+void publishHaSensorDiscovery(String objectId, String name, String valueTemplate, String icon,
+                              String unitOfMeasurement);
 
 void addHaDeviceInfo(JsonObject device);
 
 String haSafeObjectId(String value);
 
-void publishHaButtonDiscovery(
-  String objectId,
-  String name,
-  String commandTopic,
-  String payloadPress,
-  String icon
-);
+void publishHaButtonDiscovery(String objectId, String name, String commandTopic,
+                              String payloadPress, String icon);
 
-void publishHaSelectDiscovery(
-  String objectId,
-  String name,
-  String commandTopic,
-  String stateTopic,
-  String valueTemplate,
-  String icon
-);
-
+void publishHaSelectDiscovery(String objectId, String name, String commandTopic, String stateTopic,
+                              String valueTemplate, String icon);
 
 bool tryParseStatusLevel(String levelText, StatusLevel& level);
 
 void setStatus(StatusLevel level, String title, String mainText, String footer);
 void setStatus(StatusLevel level, String title, String mainText, String footer, bool logUpdate);
 
-void setStatus(
-  StatusLevel level,
-  String source,
-  String title,
-  String mainText,
-  String footer
-);
+void setStatus(StatusLevel level, String source, String title, String mainText, String footer);
 
-void setStatus(
-  StatusLevel level,
-  String source,
-  String title,
-  String mainText,
-  String footer,
-  bool logUpdate
-);
+void setStatus(StatusLevel level, String source, String title, String mainText, String footer,
+               bool logUpdate);
 
-bool setStatusWithPriority(
-  StatusLevel level,
-  String source,
-  String title,
-  String mainText,
-  String footer
-);
+bool setStatusWithPriority(StatusLevel level, String source, String title, String mainText,
+                           String footer);
 
 bool shouldAcceptClear(String incomingSource);
 
@@ -363,32 +314,31 @@ bool shouldAcceptStatusUpdate(StatusLevel incomingLevel, StatusLevel currentLeve
 String escapeJson(String value);
 String escapeHtml(String value);
 
-
 void setup() {
-    Serial.begin(115200);
+  Serial.begin(115200);
 
-    setupPins();
-    setupDisplay();
+  setupPins();
+  setupDisplay();
 
-    setStatus(STATUS_OK, "HOME", "All Good", "No alerts", false);
+  setStatus(STATUS_OK, "HOME", "All Good", "No alerts", false);
 
-    loadDeviceConfig();
-  
-    drawScreen(getDeviceName(), "Booting", "HomeStatus Mini");
-    delay(1500);
+  loadDeviceConfig();
 
-    connectToWifi();
+  drawScreen(getDeviceName(), "Booting", "HomeStatus Mini");
+  delay(1500);
 
-    if (WiFi.status() != WL_CONNECTED) {
-      startSetupMode();
-    } else {
-      setupHttpRoutes();
-      setupMqtt();
-    }
-    
-    Serial.println();
-    Serial.println("HomeStatus Mini ready.");
-    printHelp();
+  connectToWifi();
+
+  if (WiFi.status() != WL_CONNECTED) {
+    startSetupMode();
+  } else {
+    setupHttpRoutes();
+    setupMqtt();
+  }
+
+  Serial.println();
+  Serial.println("HomeStatus Mini ready.");
+  printHelp();
 }
 
 void loop() {

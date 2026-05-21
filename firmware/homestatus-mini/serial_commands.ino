@@ -105,8 +105,7 @@ void processSetCommand(String command) {
     title = parts[3];
     mainText = parts[4];
     footer = parts[5];
-  }
-  else {
+  } else {
     Serial.println("Invalid set command.");
     Serial.println("Use: set|alert|GARAGE|Open too long|Alert active");
     Serial.println("Or:  set|alert|garage|GARAGE|Open too long|Alert active");
@@ -114,7 +113,7 @@ void processSetCommand(String command) {
   }
 
   levelText = limitText(levelText, MAX_LEVEL_CHARS);
-  
+
   StatusLevel level;
 
   if (!tryParseStatusLevel(levelText, level)) {
@@ -151,7 +150,10 @@ void printHelp() {
   Serial.println("  GET /alert?key=YOUR_API_KEY");
   Serial.println("  GET /info?key=YOUR_API_KEY");
   Serial.println("  GET /clear?key=YOUR_API_KEY");
-  Serial.println("  GET /set?key=YOUR_API_KEY&level=alert&source=garage&title=GARAGE&main=Open%20too%20long&footer=Alert%20active");
+  Serial.println(
+      "  GET "
+      "/set?key=YOUR_API_KEY&level=alert&source=garage&title=GARAGE&main=Open%20too%20long&footer="
+      "Alert%20active");
   Serial.println("  GET /factory-reset?key=YOUR_API_KEY");
   Serial.println("  GET /config?key=YOUR_API_KEY");
   Serial.println();

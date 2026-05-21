@@ -1,43 +1,43 @@
 const char* PREFERENCES_NAMESPACE = "homestatus";
 
 void loadDeviceConfig() {
-    preferences.begin(PREFERENCES_NAMESPACE, true);
+  preferences.begin(PREFERENCES_NAMESPACE, true);
 
-    deviceConfig.wifiSSID = preferences.getString("wifiSSID", "");
-    deviceConfig.wifiPassword = preferences.getString("wifiPassword", "");
-    deviceConfig.deviceName = preferences.getString("deviceName", "homestatus-mini");
-    deviceConfig.apiKey = preferences.getString("apiKey", "");
+  deviceConfig.wifiSSID = preferences.getString("wifiSSID", "");
+  deviceConfig.wifiPassword = preferences.getString("wifiPassword", "");
+  deviceConfig.deviceName = preferences.getString("deviceName", "homestatus-mini");
+  deviceConfig.apiKey = preferences.getString("apiKey", "");
 
-    deviceConfig.mqttEnabled = preferences.getBool("mqttEnabled", false);
-    deviceConfig.mqttHost = preferences.getString("mqttHost", "");
-    deviceConfig.mqttPort = preferences.getInt("mqttPort", 1883);
-    deviceConfig.mqttUsername = preferences.getString("mqttUser", "");
-    deviceConfig.mqttPassword = preferences.getString("mqttPass", "");
-    deviceConfig.mqttBaseTopic = preferences.getString("mqttTopic", "homestatus-mini");
+  deviceConfig.mqttEnabled = preferences.getBool("mqttEnabled", false);
+  deviceConfig.mqttHost = preferences.getString("mqttHost", "");
+  deviceConfig.mqttPort = preferences.getInt("mqttPort", 1883);
+  deviceConfig.mqttUsername = preferences.getString("mqttUser", "");
+  deviceConfig.mqttPassword = preferences.getString("mqttPass", "");
+  deviceConfig.mqttBaseTopic = preferences.getString("mqttTopic", "homestatus-mini");
 
-    preferences.end();
+  preferences.end();
 
-    Serial.println("Loaded device config:");
-    Serial.print("  Wi-Fi configured: ");
-    Serial.println(hasSavedWifiConfig() ? "Yes" : "No");
-    Serial.print("  API key configured: ");
-    Serial.println(hasSavedApiKey() ? "Yes" : "No");
-    Serial.print("  Device Name: ");
-    Serial.println(deviceConfig.deviceName);
-    Serial.print("  WiFi SSID: ");
-    Serial.println(deviceConfig.wifiSSID);
-    Serial.print("  Has complete config: ");
-    Serial.println(hasCompleteDeviceConfig() ? "Yes" : "No");
-    Serial.print("  MQTT enabled: ");
-    Serial.println(deviceConfig.mqttEnabled ? "Yes" : "No");
-    Serial.print("  MQTT configured: ");
-    Serial.println(hasMqttConfig() ? "Yes" : "No");
-    Serial.print("  MQTT host: ");
-    Serial.println(deviceConfig.mqttHost);
-    Serial.print("  MQTT port: ");
-    Serial.println(deviceConfig.mqttPort);
-    Serial.print("  MQTT base topic: ");
-    Serial.println(deviceConfig.mqttBaseTopic);
+  Serial.println("Loaded device config:");
+  Serial.print("  Wi-Fi configured: ");
+  Serial.println(hasSavedWifiConfig() ? "Yes" : "No");
+  Serial.print("  API key configured: ");
+  Serial.println(hasSavedApiKey() ? "Yes" : "No");
+  Serial.print("  Device Name: ");
+  Serial.println(deviceConfig.deviceName);
+  Serial.print("  WiFi SSID: ");
+  Serial.println(deviceConfig.wifiSSID);
+  Serial.print("  Has complete config: ");
+  Serial.println(hasCompleteDeviceConfig() ? "Yes" : "No");
+  Serial.print("  MQTT enabled: ");
+  Serial.println(deviceConfig.mqttEnabled ? "Yes" : "No");
+  Serial.print("  MQTT configured: ");
+  Serial.println(hasMqttConfig() ? "Yes" : "No");
+  Serial.print("  MQTT host: ");
+  Serial.println(deviceConfig.mqttHost);
+  Serial.print("  MQTT port: ");
+  Serial.println(deviceConfig.mqttPort);
+  Serial.print("  MQTT base topic: ");
+  Serial.println(deviceConfig.mqttBaseTopic);
 }
 
 void saveDeviceConfig(String ssid, String password, String deviceName, String apiKey) {
@@ -76,23 +76,23 @@ void saveDeviceConfig(String ssid, String password, String deviceName, String ap
 }
 
 void clearDeviceConfig() {
-    preferences.begin(PREFERENCES_NAMESPACE, false);
-    preferences.clear();
-    preferences.end();
+  preferences.begin(PREFERENCES_NAMESPACE, false);
+  preferences.clear();
+  preferences.end();
 
-    deviceConfig.wifiSSID = "";
-    deviceConfig.wifiPassword = "";
-    deviceConfig.deviceName = "homestatus-mini";
-    deviceConfig.apiKey = "";
+  deviceConfig.wifiSSID = "";
+  deviceConfig.wifiPassword = "";
+  deviceConfig.deviceName = "homestatus-mini";
+  deviceConfig.apiKey = "";
 
-    deviceConfig.mqttEnabled = false;
-    deviceConfig.mqttHost = "";
-    deviceConfig.mqttPort = 1883;
-    deviceConfig.mqttUsername = "";
-    deviceConfig.mqttPassword = "";
-    deviceConfig.mqttBaseTopic = "homestatus-mini";
+  deviceConfig.mqttEnabled = false;
+  deviceConfig.mqttHost = "";
+  deviceConfig.mqttPort = 1883;
+  deviceConfig.mqttUsername = "";
+  deviceConfig.mqttPassword = "";
+  deviceConfig.mqttBaseTopic = "homestatus-mini";
 
-    Serial.println("Device config cleared.");
+  Serial.println("Device config cleared.");
 }
 
 void factoryResetAndReboot() {
@@ -136,7 +136,8 @@ String getApiKey() {
   return String(API_KEY);
 }
 
-void saveMqttConfig(bool enabled, String host, int port, String username, String password, String baseTopic) {
+void saveMqttConfig(bool enabled, String host, int port, String username, String password,
+                    String baseTopic) {
   host.trim();
   username.trim();
   password.trim();

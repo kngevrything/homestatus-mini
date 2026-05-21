@@ -38,8 +38,6 @@ void setupHttpRoutes() {
   server.on("/health", HTTP_GET, handleHealth);
   server.on("/reboot", HTTP_GET, handleReboot);
 
- 
-  
   server.on("/ok", HTTP_GET, []() {
     if (!requireApiKey()) {
       return;
@@ -85,12 +83,9 @@ void setupHttpRoutes() {
     sendPlain("Info state set");
   });
 
-
   server.on("/set", HTTP_GET, handleSetFromHttp);
 
-  server.onNotFound([]() {
-    server.send(404, "text/plain", "Not found");
-  });
+  server.onNotFound([]() { server.send(404, "text/plain", "Not found"); });
 
   server.on("/factory-reset", HTTP_GET, handleFactoryReset);
 
@@ -109,7 +104,9 @@ void handleRoot() {
   html += "<style>";
   html += "body{font-family:Arial,sans-serif;margin:24px;line-height:1.4;}";
   html += "code{background:#eee;padding:2px 4px;border-radius:4px;}";
-  html += "a{display:inline-block;margin:4px 8px 4px 0;padding:8px 12px;background:#eee;border-radius:8px;text-decoration:none;color:#111;}";
+  html +=
+      "a{display:inline-block;margin:4px 8px 4px 0;padding:8px "
+      "12px;background:#eee;border-radius:8px;text-decoration:none;color:#111;}";
   html += ".card{border:1px solid #ddd;border-radius:12px;padding:16px;max-width:520px;}";
   html += "</style>";
   html += "</head>";
@@ -122,7 +119,7 @@ void handleRoot() {
   html += "<p><strong>Main:</strong> " + escapeHtml(currentStatus.mainText) + "</p>";
   html += "<p><strong>Footer:</strong> " + escapeHtml(currentStatus.footer) + "</p>";
   html += "<p><strong>IP:</strong> " + WiFi.localIP().toString() + "</p>";
- 
+
   html += "<h2>Quick Actions</h2>";
   html += "<p>State-changing routes require <code>?key=YOUR_API_KEY</code>.</p>";
   html += "<code>/alert?key=YOUR_API_KEY</code><br>";
@@ -240,7 +237,7 @@ void handleHealth() {
   json += "\"mqttConnected\":";
   json += mqttClient.connected() ? "true" : "false";
   json += ",";
-  
+
   json += "\"homeAssistantDiscovery\":\"enabled\",";
   json += "\"wifiStatus\":\"" + wifiStatusToString(WiFi.status()) + "\",";
   json += "\"ip\":\"" + WiFi.localIP().toString() + "\",";
