@@ -185,18 +185,10 @@ void onMqttMessage(char* topic, byte* payload, unsigned int length) {
     return;
   }
 
-  if (level == STATUS_OK) {
-    if (!doc["title"].is<const char*>()) {
-      title = "HOME";
-    }
-
-    if (!doc["main"].is<const char*>()) {
-      mainText = "All Good";
-    }
-
-    if (!doc["footer"].is<const char*>()) {
-      footer = "No alerts";
-    }
+  if (level == STATUS_OK && !doc["title"].is<const char*>() && !doc["main"].is<const char*>() &&
+      !doc["footer"].is<const char*>()) {
+    clearStatusWithSource(source);
+    return;
   }
 
   setStatusWithPriority(level, source, title, mainText, footer);
@@ -490,7 +482,7 @@ void handleMqttLevelSet(String levelText) {
   Serial.println(levelText);
 
   if (levelText == "ok") {
-    setDefaultOk();
+    clearStatusWithSource("");
     return;
   }
 
