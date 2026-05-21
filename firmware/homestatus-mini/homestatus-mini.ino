@@ -15,8 +15,6 @@
 #include <PubSubClient.h>
 #include <ArduinoJson.h>
 
-#include "wifi_config.h"
-
 // -----------------------------------------------------------------------------
 // Hardware configuration
 // -----------------------------------------------------------------------------
@@ -293,6 +291,7 @@ bool setStatusWithPriority(StatusLevel level, String source, String title, Strin
 bool shouldAcceptClear(String incomingSource);
 
 void setDefaultOk();
+void setDefaultOkQuiet();
 
 void setDefaultWarning();
 bool setDefaultWarningWithPriority();
@@ -326,7 +325,7 @@ void setup() {
   setupPins();
   setupDisplay();
 
-  setStatus(STATUS_OK, "HOME", "All Good", "No alerts", false);
+  setDefaultOkQuiet();
 
   loadDeviceConfig();
 

@@ -136,15 +136,10 @@ String getDeviceName() {
   return "homestatus-mini";
 }
 
-// Prefer the saved API key from setup mode. API_KEY is only a developer fallback
-// from wifi_config.h. In practice, the API key should always be set through setup and saved in
-// Preferences.
+// API key is saved during setup mode. If the user did not complete setup, there is no API key and
+// state-changing HTTP routes will be blocked until setup is complete.
 String getApiKey() {
-  if (deviceConfig.apiKey.length() > 0) {
-    return deviceConfig.apiKey;
-  }
-
-  return String(API_KEY);
+  return deviceConfig.apiKey;
 }
 
 void saveMqttConfig(bool enabled, String host, int port, String username, String password,
