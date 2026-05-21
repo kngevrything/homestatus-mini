@@ -244,6 +244,12 @@ HomeStatus Mini is intended for trusted local networks.
 - Use a dedicated MQTT user with limited permissions when possible.
 - Factory reset the device before giving it to someone else.
 
+## Official Builds and Forks
+
+The firmware is licensed under GPLv3.
+
+Forks and modifications are allowed under the license, but unofficial builds are not endorsed by this project. Users should only flash firmware from sources they trust. Official releases are published from this repository.
+
 ## Known Limitations
 
 - Prototype firmware.
