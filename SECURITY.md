@@ -15,6 +15,12 @@ HomeStatus Mini currently uses the following protections:
 - Wi-Fi and MQTT credentials are stored locally on the ESP32 using Preferences.
 - The setup access point is intended only for first-time setup and recovery.
 
+## Firmware Trust
+
+Only flash firmware from trusted sources.
+
+Modified firmware can access stored Wi-Fi, MQTT, and API credentials on the device. Official releases are published from this repository. Forks and modified builds are not endorsed unless explicitly stated.
+
 ## Stored Credentials
 
 The device stores configuration in ESP32 Preferences, including:
