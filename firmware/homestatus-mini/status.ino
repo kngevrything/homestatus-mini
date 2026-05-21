@@ -26,9 +26,12 @@ void normalizeStatusText(String& source, String& title, String& mainText, String
 // -----------------------------------------------------------------------------
 // Default statuses
 // -----------------------------------------------------------------------------
-
 void setDefaultOk() {
   setStatus(STATUS_OK, "", "HOME", "All Good", "No alerts");
+}
+
+void setDefaultOkQuiet() {
+  setStatus(STATUS_OK, "", "HOME", "All Good", "No alerts", false);
 }
 
 void setDefaultWarning() {
@@ -305,6 +308,16 @@ bool shouldAcceptClear(String incomingSource) {
   }
 
   return incomingSource == currentStatus.source;
+}
+
+// Source-aware clear logic is integrated into setStatusWithPriority() since OK is a status level
+// with priority rules, not a separate clear command. Clear attempts with a source that does not
+// match the current status's source will be rejected to prevent unintended clears of active alerts.
+// Status updates with levels other than OK will continue to be evaluated against priority rules
+// without regard to source, since they are intended to be able to update each other based on
+// priority regardless of source.
+bool clearStatusWithSource(String source) {
+  return setStatusWithPriority(STATUS_OK, source, "HOME", "All Good", "No alerts");
 }
 
 // Priority rules protect important alerts from lower-priority updates.

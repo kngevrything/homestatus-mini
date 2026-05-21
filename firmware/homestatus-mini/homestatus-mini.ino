@@ -289,6 +289,7 @@ bool setStatusWithPriority(StatusLevel level, String source, String title, Strin
                            String footer);
 
 bool shouldAcceptClear(String incomingSource);
+bool clearStatusWithSource(String source);
 
 void setDefaultOk();
 void setDefaultOkQuiet();

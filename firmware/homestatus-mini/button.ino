@@ -64,13 +64,13 @@ void onButtonPressed() {
   }
 
   if (currentStatus.level == STATUS_INFO) {
-    setDefaultOk();
+    clearStatusWithSource("");
     Serial.println("Info cleared");
     return;
   }
 
   if (currentStatus.level == STATUS_ACKED) {
-    setDefaultOk();
+    clearStatusWithSource("");
     Serial.println("Acknowledged alert cleared");
     return;
   }
