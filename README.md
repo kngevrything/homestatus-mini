@@ -4,7 +4,9 @@ HomeStatus Mini is a local-first ESP32 status display for home automation, homel
 
 It uses a small OLED screen, RGB status LED, and physical acknowledge button to show simple household or system states such as OK, warning, alert, info, and acknowledged.
 
-The project is currently prototype firmware, but the core flow works:
+This is prototype firmware, but the core flow works.
+
+## Features
 
 - First-time Wi-Fi setup mode
 - OLED status display
@@ -29,7 +31,7 @@ Tested with:
 
 Other ESP32 boards should work, but pin mappings may need to change.
 
-## Confirmed Pin Mapping
+## Pin Summary
 
 | Component | ESP32 Pin |
 | --------- | --------- |
@@ -39,6 +41,8 @@ Other ESP32 boards should work, but pin mappings may need to change.
 | RGB Green | GPIO25    |
 | RGB Red   | GPIO26    |
 | RGB Blue  | GPIO27    |
+
+See [`docs/wiring.md`](docs/wiring.md) for wiring details.
 
 ## Arduino Requirements
 
@@ -52,6 +56,17 @@ Install these Arduino libraries through the Arduino Library Manager:
 - Adafruit GFX Library
 - PubSubClient
 - ArduinoJson
+
+## Quick Start
+
+1. Clone the repository.
+2. Open `firmware/homestatus-mini/homestatus-mini.ino` in the Arduino IDE.
+3. Select your ESP32 board and port.
+4. Install the required libraries.
+5. Flash the firmware.
+6. Connect to the setup Wi-Fi network.
+7. Configure Wi-Fi, API key, device name, and optional MQTT settings.
+8. Use Serial, HTTP, MQTT, or Home Assistant to update the display.
 
 ## First-Time Setup
 
@@ -84,7 +99,9 @@ Settings are stored in ESP32 Preferences.
 | Short press           | Acknowledge alert, clear info, or clear acknowledged state   |
 | Long press, 8 seconds | Factory reset saved configuration and reboot into setup mode |
 
-## Status Levels
+## Status Model
+
+Supported levels:
 
 | Level     | LED    | Meaning                                |
 | --------- | ------ | -------------------------------------- |
@@ -94,23 +111,15 @@ Settings are stored in ESP32 Preferences.
 | `info`    | Blue   | Informational state                    |
 | `acked`   | Yellow | Alert was acknowledged but not cleared |
 
-## Message Priority
-
-HomeStatus Mini protects higher-priority messages from being overwritten by lower-priority automation updates.
-
 Priority order:
 
 ```text
 alert / acked > warning > info > ok
 ```
 
-`ok` is treated as an explicit clear.
+Messages can include an optional `source`. A source-specific clear only clears the display if the current status has the same source.
 
-## Source-Aware Clearing
-
-Status messages can include an optional `source`.
-
-Example:
+Example alert:
 
 ```json
 {
@@ -122,7 +131,7 @@ Example:
 }
 ```
 
-A source-specific clear only clears the display if the current status has the same source:
+Source-specific clear:
 
 ```json
 {
@@ -131,7 +140,7 @@ A source-specific clear only clears the display if the current status has the sa
 }
 ```
 
-An `ok` message without a source clears everything:
+Global clear:
 
 ```json
 {
@@ -139,76 +148,17 @@ An `ok` message without a source clears everything:
 }
 ```
 
-This helps prevent one automation from accidentally clearing another automation's active alert.
+## Control Options
 
-## Serial Commands
+HomeStatus Mini can be controlled through:
 
-Serial commands are available at `115200` baud.
+- Serial commands
+- Local HTTP routes
+- MQTT topics
+- Home Assistant MQTT discovery controls
+- Physical button
 
-```text
-help
-ok
-clear
-warning
-alert
-info
-set|alert|GARAGE|Open too long|Alert active
-set|alert|garage|GARAGE|Open too long|Alert active
-set|warning|freezer|FREEZER|Temp rising|Check door
-```
-
-The source-aware format is:
-
-```text
-set|level|source|title|main|footer
-```
-
-## HTTP API
-
-Read-only routes:
-
-```text
-GET /
-GET /status
-GET /health
-```
-
-Protected routes require:
-
-```text
-?key=YOUR_API_KEY
-```
-
-Protected routes:
-
-```text
-GET /ok?key=YOUR_API_KEY
-GET /warning?key=YOUR_API_KEY
-GET /alert?key=YOUR_API_KEY
-GET /info?key=YOUR_API_KEY
-GET /clear?key=YOUR_API_KEY
-GET /reboot?key=YOUR_API_KEY
-GET /factory-reset?key=YOUR_API_KEY
-GET /config?key=YOUR_API_KEY
-```
-
-Set a custom status:
-
-```text
-GET /set?key=YOUR_API_KEY&level=alert&source=garage&title=GARAGE&main=Open%20too%20long&footer=Check%20door
-```
-
-Source-specific clear:
-
-```text
-GET /set?key=YOUR_API_KEY&level=ok&source=garage
-```
-
-Global clear:
-
-```text
-GET /set?key=YOUR_API_KEY&level=ok
-```
+See [`docs/commands.md`](docs/commands.md) for the full Serial, HTTP, and MQTT command reference.
 
 ## MQTT
 
@@ -220,7 +170,7 @@ Default base topic:
 homestatus-mini
 ```
 
-Topics:
+Core topics:
 
 | Topic                          | Direction        | Purpose                      |
 | ------------------------------ | ---------------- | ---------------------------- |
@@ -229,58 +179,6 @@ Topics:
 | `homestatus-mini/action`       | Broker to device | Trigger acknowledge / clear  |
 | `homestatus-mini/status`       | Device to broker | Publish current state        |
 | `homestatus-mini/availability` | Device to broker | Publish `online` / `offline` |
-
-Custom status payload:
-
-```json
-{
-  "level": "alert",
-  "source": "garage",
-  "title": "GARAGE",
-  "main": "Open too long",
-  "footer": "Check door"
-}
-```
-
-Source-specific clear:
-
-```json
-{
-  "level": "ok",
-  "source": "garage"
-}
-```
-
-Global clear:
-
-```json
-{
-  "level": "ok"
-}
-```
-
-Action payload:
-
-```json
-{
-  "action": "ack"
-}
-```
-
-Level set payload:
-
-```text
-alert
-```
-
-Supported level values:
-
-```text
-ok
-warning
-alert
-info
-```
 
 Do not retain command messages on `set`, `level/set`, or `action`.
 
@@ -301,10 +199,35 @@ Discovered controls:
 - Acknowledge / Clear button
 - Status Level select
 
-See:
+See [`docs/home-assistant.md`](docs/home-assistant.md) for setup notes, scripts, and automation examples.
+
+## Documentation
+
+- [`docs/wiring.md`](docs/wiring.md), hardware wiring and pin mapping
+- [`docs/commands.md`](docs/commands.md), Serial, HTTP, and MQTT command reference
+- [`docs/home-assistant.md`](docs/home-assistant.md), Home Assistant MQTT integration examples
+- [`docs/product-notes.md`](docs/product-notes.md), product direction, design notes, tradeoffs, and roadmap
+
+## Project Structure
 
 ```text
-docs/home-assistant.md
+firmware/homestatus-mini/
+  homestatus-mini.ino
+  status.ino
+  display.ino
+  button.ino
+  wifi_manager.ino
+  provisioning.ino
+  device_config.ino
+  http_routes.ino
+  mqtt_manager.ino
+  serial_commands.ino
+
+docs/
+  commands.md
+  home-assistant.md
+  product-notes.md
+  wiring.md
 ```
 
 ## Security Notes
@@ -334,36 +257,19 @@ HomeStatus Mini is intended for trusted local networks.
 - A future version may add a source-keyed status registry for multiple active sources.
 - Hardware enclosure is not finalized.
 
-## Project Structure
-
-```text
-firmware/homestatus-mini/
-  homestatus-mini.ino
-  status.ino
-  display.ino
-  button.ino
-  wifi_manager.ino
-  provisioning.ino
-  device_config.ino
-  http_routes.ino
-  mqtt_manager.ino
-  serial_commands.ino
-
-docs/
-  home-assistant.md
-```
-
 ## Roadmap
 
 Possible future work:
 
 - Source-keyed status registry for multiple active sources
-- Alert expiration / stale message handling
+- Alert expiration / stale message timeout
 - Optional alert queue behavior
 - OTA firmware updates
 - Enclosure design
 - Cleaner logging controls with a debug flag
 - Optional TLS support
+- Better setup portal styling
+- Optional Wi-Fi scan during setup
 
 ## License
 

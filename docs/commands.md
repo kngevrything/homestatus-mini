@@ -1,46 +1,184 @@
-## Reliability / Device Routes
+# Commands and API Reference
+
+HomeStatus Mini can be controlled through Serial, HTTP, and MQTT.
+
+## Status Levels
+
+| Level     | Meaning                                     |
+| --------- | ------------------------------------------- |
+| `ok`      | No active alert                             |
+| `warning` | Needs attention                             |
+| `alert`   | Action needed                               |
+| `info`    | Informational state                         |
+| `acked`   | Alert has been acknowledged but not cleared |
+
+## Serial Commands
+
+Serial commands are available at `115200` baud.
 
 ```text
-GET /health
-GET /reboot
+help
+ok
+clear
+warning
+alert
+info
 ```
 
-## MQTT Configuration
-
-Stage 4A adds MQTT configuration storage only.
-
-The setup page can save:
-
-- MQTT enabled
-- MQTT host
-- MQTT port
-- MQTT username
-- MQTT password
-- MQTT base topic
-
-The device does not connect to MQTT yet. That is planned for the next slice.
-
-The protected `/config` endpoint reports MQTT configuration state without exposing the MQTT password.
-
-## MQTT Runtime
-
-When MQTT is enabled and configured, the device uses these topics:
+Set a custom status:
 
 ```text
-<baseTopic>/set
-<baseTopic>/status
-<baseTopic>/availability
+set|alert|GARAGE|Open too long|Alert active
+```
+
+Set a custom status with a source:
+
+```text
+set|alert|garage|GARAGE|Open too long|Alert active
+```
+
+Format:
+
+```text
+set|level|title|main|footer
+set|level|source|title|main|footer
+```
+
+## HTTP API
+
+### Read-Only Routes
+
+These routes do not require an API key:
+
+```text
+GET /
+GET /status
+GET /health
+```
+
+### Protected Routes
+
+State-changing routes require an API key:
+
+```text
+?key=YOUR_API_KEY
+```
+
+Protected routes:
+
+```text
+GET /ok?key=YOUR_API_KEY
+GET /warning?key=YOUR_API_KEY
+GET /alert?key=YOUR_API_KEY
+GET /info?key=YOUR_API_KEY
+GET /clear?key=YOUR_API_KEY
+GET /reboot?key=YOUR_API_KEY
+GET /factory-reset?key=YOUR_API_KEY
+GET /config?key=YOUR_API_KEY
+```
+
+### Custom Status
+
+```text
+GET /set?key=YOUR_API_KEY&level=alert&source=garage&title=GARAGE&main=Open%20too%20long&footer=Check%20door
+```
+
+### Source-Specific Clear
+
+```text
+GET /set?key=YOUR_API_KEY&level=ok&source=garage
+```
+
+This clears the display only if the current status source is `garage`.
+
+### Global Clear
+
+```text
+GET /set?key=YOUR_API_KEY&level=ok
+```
+
+This clears the display regardless of source.
+
+## MQTT Topics
+
+Assuming the MQTT base topic is:
+
+```text
+homestatus-mini
+```
+
+The device uses:
+
+| Topic                          | Direction        | Purpose                      |
+| ------------------------------ | ---------------- | ---------------------------- |
+| `homestatus-mini/set`          | Broker to device | Set custom status JSON       |
+| `homestatus-mini/level/set`    | Broker to device | Set default status level     |
+| `homestatus-mini/action`       | Broker to device | Trigger acknowledge / clear  |
+| `homestatus-mini/status`       | Device to broker | Publish current state        |
+| `homestatus-mini/availability` | Device to broker | Publish `online` / `offline` |
+
+## MQTT Custom Status
+
+Topic:
+
+```text
+homestatus-mini/set
+```
+
+Payload:
+
+```json
+{
+  "level": "alert",
+  "source": "garage",
+  "title": "GARAGE",
+  "main": "Open too long",
+  "footer": "Check door"
+}
+```
+
+## MQTT Source-Specific Clear
+
+Topic:
+
+```text
+homestatus-mini/set
+```
+
+Payload:
+
+```json
+{
+  "level": "ok",
+  "source": "garage"
+}
+```
+
+## MQTT Global Clear
+
+Topic:
+
+```text
+homestatus-mini/set
+```
+
+Payload:
+
+```json
+{
+  "level": "ok"
+}
 ```
 
 ## MQTT Action Topic
 
-The device also listens for simple actions on:
+Topic:
 
 ```text
-<baseTopic>/action
+homestatus-mini/action
 ```
 
-Example:
+Payload:
 
 ```json
 {
@@ -56,17 +194,25 @@ acknowledge
 clear
 ```
 
-These currently map to the same behavior as the physical button.
+The action behavior mirrors the physical button:
+
+| Current State | Result                         |
+| ------------- | ------------------------------ |
+| `alert`       | Changes to `acked`             |
+| `warning`     | Changes to `acked`             |
+| `info`        | Clears to `ok`                 |
+| `acked`       | Clears to `ok`                 |
+| `ok`          | No active alert to acknowledge |
 
 ## MQTT Status Level Topic
 
-The device listens for simple status level changes on:
+Topic:
 
 ```text
-<baseTopic>/level/set
+homestatus-mini/level/set
 ```
 
-Payload values:
+Payload examples:
 
 ```text
 ok
@@ -75,13 +221,23 @@ alert
 info
 ```
 
-These map to the device's default status messages.
+These apply the built-in default status messages.
 
-Example:
+## Retained Messages
+
+The device publishes retained messages for:
 
 ```text
-Topic: homestatus-mini/level/set
-Payload: alert
+homestatus-mini/status
+homestatus-mini/availability
 ```
 
-Home Assistant discovery creates a `Status Level` select entity that uses this topic.
+Do not retain command messages on:
+
+```text
+homestatus-mini/set
+homestatus-mini/action
+homestatus-mini/level/set
+```
+
+Retained command messages can replay unexpectedly after reconnect.

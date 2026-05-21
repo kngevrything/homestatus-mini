@@ -2,7 +2,7 @@
 
 HomeStatus Mini integrates with Home Assistant through MQTT.
 
-The device can be controlled by publishing MQTT messages, and it also publishes its current status so Home Assistant can display the active state.
+The device publishes MQTT discovery messages so Home Assistant can automatically create sensors and controls.
 
 ## Requirements
 
@@ -19,7 +19,7 @@ If the MQTT base topic is:
 homestatus-mini
 ```
 
-The device uses these topics:
+The device uses:
 
 | Topic                          | Direction                | Purpose                                      |
 | ------------------------------ | ------------------------ | -------------------------------------------- |
@@ -31,13 +31,12 @@ The device uses these topics:
 
 ## Home Assistant Discovery
 
-When MQTT is enabled, HomeStatus Mini publishes Home Assistant discovery messages.
-
-Home Assistant should create:
+HomeStatus Mini publishes discovery messages for:
 
 ### Sensors
 
 - Level
+- Source
 - Title
 - Main
 - Footer
@@ -46,6 +45,8 @@ Home Assistant should create:
 
 - Acknowledge / Clear button
 - Status Level select
+
+If the device does not appear, verify that MQTT is connected and that Home Assistant MQTT discovery is enabled.
 
 ## Status Levels
 
@@ -57,21 +58,12 @@ Home Assistant should create:
 | `info`    | Blue   | Informational or task complete                    |
 | `acked`   | Yellow | Alert has been acknowledged but not fully cleared |
 
-## Message Priority
-
-HomeStatus Mini protects higher-priority messages from being overwritten by lower-priority automation updates.
-
-Priority order:
-
-````text
-alert > warning > info > ok
-
 ## Publish a Custom Status
 
-Use the `mqtt.publish` service.
+Use the `mqtt.publish` action.
 
 ```yaml
-service: mqtt.publish
+action: mqtt.publish
 data:
   topic: homestatus-mini/set
   payload: >
@@ -82,7 +74,7 @@ data:
       "main": "Open too long",
       "footer": "Check door"
     }
-````
+```
 
 Expected result:
 
@@ -92,33 +84,53 @@ Expected result:
 - LED turns red
 - Home Assistant status sensors update
 
-## Clear the Display
+## Source-Aware Clearing
+
+Status messages can include an optional `source`.
+
+Source-specific clear:
 
 ```yaml
-service: mqtt.publish
+action: mqtt.publish
 data:
-  topic: homestatus-mini/level/set
-  payload: ok
+  topic: homestatus-mini/set
+  payload: >
+    {
+      "level": "ok",
+      "source": "garage"
+    }
 ```
 
-This applies the default OK state:
+This only clears the display if the current status is owned by `garage`.
 
-```text
-HOME
-All Good
-No alerts
+Global clear:
+
+```yaml
+action: mqtt.publish
+data:
+  topic: homestatus-mini/set
+  payload: >
+    {
+      "level": "ok"
+    }
 ```
+
+This clears the display regardless of source.
 
 ## Acknowledge or Clear
 
-```yaml
-service: mqtt.publish
-data:
-  topic: homestatus-mini/action
-  payload: >
-    {
-      "action": "ack"
-    }
+Topic:
+
+```text
+homestatus-mini/action
+```
+
+Payload:
+
+```json
+{
+  "action": "ack"
+}
 ```
 
 Behavior matches the physical button:
@@ -131,15 +143,12 @@ Behavior matches the physical button:
 | `acked`       | Clears to `ok`                 |
 | `ok`          | No active alert to acknowledge |
 
-## Set a Default Status Level
+## Status Level Select
 
-Use the simple status level topic:
+The Home Assistant `Status Level` select publishes simple values to:
 
-```yaml
-service: mqtt.publish
-data:
-  topic: homestatus-mini/level/set
-  payload: alert
+```text
+homestatus-mini/level/set
 ```
 
 Supported payloads:
@@ -151,7 +160,7 @@ alert
 info
 ```
 
-These apply the device’s built-in default messages.
+These apply the device's built-in default messages.
 
 ## Example Scripts
 
@@ -163,15 +172,32 @@ Add these under `scripts.yaml`, or create them through the Home Assistant UI.
 homestatus_garage_alert:
   alias: HomeStatus Garage Alert
   sequence:
-    - service: mqtt.publish
+    - action: mqtt.publish
       data:
         topic: homestatus-mini/set
         payload: >
           {
             "level": "alert",
+            "source": "garage",
             "title": "GARAGE",
             "main": "Open too long",
             "footer": "Check door"
+          }
+```
+
+### Garage Clear
+
+```yaml
+homestatus_garage_clear:
+  alias: HomeStatus Garage Clear
+  sequence:
+    - action: mqtt.publish
+      data:
+        topic: homestatus-mini/set
+        payload: >
+          {
+            "level": "ok",
+            "source": "garage"
           }
 ```
 
@@ -181,12 +207,13 @@ homestatus_garage_alert:
 homestatus_washer_done:
   alias: HomeStatus Washer Done
   sequence:
-    - service: mqtt.publish
+    - action: mqtt.publish
       data:
         topic: homestatus-mini/set
         payload: >
           {
             "level": "info",
+            "source": "washer",
             "title": "WASHER",
             "main": "Done",
             "footer": "Move laundry"
@@ -199,12 +226,13 @@ homestatus_washer_done:
 homestatus_freezer_warning:
   alias: HomeStatus Freezer Warning
   sequence:
-    - service: mqtt.publish
+    - action: mqtt.publish
       data:
         topic: homestatus-mini/set
         payload: >
           {
             "level": "warning",
+            "source": "freezer",
             "title": "FREEZER",
             "main": "Temp rising",
             "footer": "Check door"
@@ -217,35 +245,37 @@ homestatus_freezer_warning:
 homestatus_internet_down:
   alias: HomeStatus Internet Down
   sequence:
-    - service: mqtt.publish
+    - action: mqtt.publish
       data:
         topic: homestatus-mini/set
         payload: >
           {
             "level": "alert",
+            "source": "network",
             "title": "NETWORK",
             "main": "Internet down",
             "footer": "Check router"
           }
 ```
 
-### Clear HomeStatus
+### Global Clear
 
 ```yaml
-homestatus_clear:
-  alias: HomeStatus Clear
+homestatus_clear_all:
+  alias: HomeStatus Clear All
   sequence:
-    - service: mqtt.publish
+    - action: mqtt.publish
       data:
-        topic: homestatus-mini/level/set
-        payload: ok
+        topic: homestatus-mini/set
+        payload: >
+          {
+            "level": "ok"
+          }
 ```
 
 ## Example Automations
 
 ### Garage Open Too Long
-
-This assumes you already have a garage door sensor in Home Assistant.
 
 Replace `binary_sensor.garage_door` with your actual entity.
 
@@ -258,12 +288,13 @@ trigger:
     for:
       minutes: 15
 action:
-  - service: mqtt.publish
+  - action: mqtt.publish
     data:
       topic: homestatus-mini/set
       payload: >
         {
           "level": "alert",
+          "source": "garage",
           "title": "GARAGE",
           "main": "Open 15 min",
           "footer": "Check door"
@@ -280,10 +311,14 @@ trigger:
     entity_id: binary_sensor.garage_door
     to: "off"
 action:
-  - service: mqtt.publish
+  - action: mqtt.publish
     data:
-      topic: homestatus-mini/level/set
-      payload: ok
+      topic: homestatus-mini/set
+      payload: >
+        {
+          "level": "ok",
+          "source": "garage"
+        }
 mode: single
 ```
 
@@ -302,12 +337,13 @@ trigger:
     for:
       minutes: 3
 action:
-  - service: mqtt.publish
+  - action: mqtt.publish
     data:
       topic: homestatus-mini/set
       payload: >
         {
           "level": "info",
+          "source": "washer",
           "title": "WASHER",
           "main": "Done",
           "footer": "Move laundry"
@@ -328,12 +364,13 @@ trigger:
     for:
       minutes: 5
 action:
-  - service: mqtt.publish
+  - action: mqtt.publish
     data:
       topic: homestatus-mini/set
       payload: >
         {
           "level": "warning",
+          "source": "freezer",
           "title": "FREEZER",
           "main": "Temp rising",
           "footer": "Check door"
@@ -357,6 +394,7 @@ topic: homestatus-mini/set
 payload: >
   {
     "level": "alert",
+    "source": "test",
     "title": "TEST",
     "main": "MQTT works",
     "footer": "Home Assistant"
@@ -369,38 +407,5 @@ payload: >
 - The device publishes retained status and availability messages.
 - The MQTT base topic can be changed during device setup.
 - If the base topic changes, update the examples to match the new topic.
-
-## Source-Aware Clearing
-
-Status messages can include an optional `source`.
-
-Example:
-
-```json
-{
-  "level": "alert",
-  "source": "garage",
-  "title": "GARAGE",
-  "main": "Open too long",
-  "footer": "Check door"
-}
-```
-
-A source-specific clear only clears the display if the current status has the same source:
-
-```json
-{
-  "level": "ok",
-  "source": "garage"
-}
-```
-
-An `ok` message without a source clears everything:
-
-```json
-{
-  "level": "ok"
-}
-```
-
-This prevents one automation from accidentally clearing another automation's active alert.
+- Use stable source names such as `garage`, `washer`, `freezer`, or `network`.
+- The current firmware displays one active status at a time. Lower-priority messages are not queued for later display yet.
