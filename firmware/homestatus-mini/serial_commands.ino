@@ -1,3 +1,8 @@
+// Serial debug command handling.
+//
+// Keeps a local developer/debug control path available even when Wi-Fi, MQTT,
+// or Home Assistant are not working.
+
 void handleSerial() {
   while (Serial.available() > 0) {
     char c = Serial.read();
@@ -50,6 +55,10 @@ void processCommand(String command) {
   Serial.println(command);
 }
 
+// Supports both legacy and source-aware set commands:
+//
+//   set|level|title|main|footer
+//   set|level|source|title|main|footer
 void processSetCommand(String command) {
   String parts[6];
 

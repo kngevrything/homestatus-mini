@@ -1,3 +1,28 @@
+// MQTT runtime and Home Assistant integration.
+//
+// Connects to the configured MQTT broker, receives status/action commands,
+// publishes retained status and availability, and publishes Home Assistant
+// MQTT discovery messages for sensors and controls.
+//
+// MQTT messages are published under the base topic {mqttBaseTopic}, which defaults to the device
+// name. The following subtopics are used:
+// - {baseTopic}/status: Retained JSON status document with device, level, source, title, mainText,
+//                       footer, and uptimeSeconds fields.
+// - {baseTopic}/availability: Retained string topic with "online" or "offline" value representing
+//                             the device's availability.
+// - {baseTopic}/set: JSON topic to set the status with optional source, title, mainText, and footer
+//                    fields. Example payload:
+//                    {"level":"alert","source":"garage","title":"GARAGE","main":"Open too
+//                    long","footer":"Alert active"}
+// - {baseTopic}/action: JSON topic to trigger actions with an "action" field. Example payload:
+//                       {"action":"clear"} or {"action":"acknowledge"}
+// - {baseTopic}/level/set: String topic to set the status level with priority handling. Example
+//                          payload: "warning"
+//
+// MQTT configuration is set through the setup page and saved in ESP32 Preferences. It is not
+// encrypted, so do not expose this device to untrusted physical access. MQTT is optional and will
+// be skipped if not configured.
+
 void setupMqtt() {
   if (!hasMqttConfig()) {
     Serial.println("MQTT not configured. Skipping MQTT setup.");
@@ -33,6 +58,8 @@ void handleMqtt() {
   }
 }
 
+// MQTT reconnect is non-blocking and throttled so the device remains responsive
+// when the broker is unavailable.
 void reconnectMqttIfNeeded() {
   if (mqttClient.connected()) {
     return;
@@ -267,6 +294,8 @@ String mqttStateToString(int state) {
   }
 }
 
+// Discovery messages are retained so Home Assistant can recreate entities
+// after restart without waiting for a firmware reboot.
 void publishHomeAssistantDiscovery() {
   if (!isMqttReady()) {
     return;

@@ -1,5 +1,14 @@
+// OLED display rendering.
+//
+// Converts the current status title, main text, and footer into a predictable
+// 128x64 SSD1306 layout. Display formatting is intentionally handled here only;
+// stored status text is normalized elsewhere and is not modified by rendering.
+
 const int OLED_WIDTH_PX = 128;
 
+// Layout constants for the default Adafruit GFX font.
+// Small text is approximately 6 px wide per character.
+// Large text uses text size 2, so it is approximately 12 px per character.
 const int TEXT_SIZE_SMALL = 1;
 const int TEXT_SIZE_LARGE = 2;
 
@@ -46,6 +55,8 @@ String fitText(String value, int maxChars) {
   return value.substring(0, maxChars - 1) + ".";
 }
 
+// Splits long main text into two small-text lines using a word boundary when
+// possible. If the text still does not fit, line 2 is truncated.
 void splitTextTwoLines(String value, int maxCharsPerLine, String& line1, String& line2) {
   value.trim();
 

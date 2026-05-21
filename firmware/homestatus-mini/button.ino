@@ -1,3 +1,8 @@
+// Physical button handling.
+//
+// Short press mirrors the Home Assistant acknowledge/clear action.
+// Long press performs a factory reset and reboots into setup mode.
+
 void handleButton() {
   bool isPressed = digitalRead(BUTTON_PIN) == LOW;
   unsigned long now = millis();
@@ -30,6 +35,8 @@ void handleButton() {
   if (isPressed && !longPressHandled) {
     unsigned long heldMs = now - buttonPressedAtMs;
 
+    // Long press is intentionally handled before release so the user gets immediate
+    // feedback once the factory-reset threshold is reached.
     if (heldMs >= FACTORY_RESET_HOLD_MS) {
       longPressHandled = true;
 
@@ -48,7 +55,7 @@ void onButtonPressed() {
   if (currentStatus.level == STATUS_WARNING || currentStatus.level == STATUS_ALERT) {
     currentStatus.level = STATUS_ACKED;
     currentStatus.footer = "Acknowledged";
-    
+
     showStatus();
     publishMqttStatus();
 

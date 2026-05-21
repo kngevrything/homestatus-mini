@@ -1,3 +1,10 @@
+// Wi-Fi connection management.
+//
+// Connects to saved Wi-Fi credentials from Preferences, switches cleanly out of
+// setup AP mode, and periodically attempts reconnects during normal operation.
+
+// Ensure the setup access point is fully disabled before joining the user's
+// Wi-Fi network. Without this, the setup SSID can linger after provisioning.
 void switchToStationMode() {
   WiFi.softAPdisconnect(true);
   delay(100);
@@ -78,6 +85,8 @@ void checkWifiConnection() {
     return;
   }
 
+  // Reconnect attempts are throttled so MQTT, HTTP, Serial, and button handling
+  // remain responsive if the network is down.
   Serial.println("Wi-Fi disconnected. Attempting reconnect...");
 
   WiFi.disconnect();

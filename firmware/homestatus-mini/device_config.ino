@@ -1,3 +1,11 @@
+// Persistent device configuration.
+//
+// Loads, saves, and clears device settings from ESP32 Preferences, including
+// Wi-Fi, device name, API key, and MQTT configuration. Secrets are intentionally
+// not printed to Serial or exposed through /config.
+
+// Preferences namespace. Changing this value will make previously saved device
+// configuration unreadable unless migration logic is added.
 const char* PREFERENCES_NAMESPACE = "homestatus";
 
 void loadDeviceConfig() {
@@ -128,6 +136,9 @@ String getDeviceName() {
   return "homestatus-mini";
 }
 
+// Prefer the saved API key from setup mode. API_KEY is only a developer fallback
+// from wifi_config.h. In practice, the API key should always be set through setup and saved in
+// Preferences.
 String getApiKey() {
   if (deviceConfig.apiKey.length() > 0) {
     return deviceConfig.apiKey;

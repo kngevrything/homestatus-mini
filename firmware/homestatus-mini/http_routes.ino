@@ -1,3 +1,12 @@
+// Local HTTP API.
+//
+// Provides browser-friendly status pages, read-only status/health/config
+// endpoints, and API-key-protected control routes for local automation.
+// API key is configured through the setup page and saved in ESP32 Preferences. It is not
+// encrypted, so do not expose this device to untrusted physical access.
+
+// State-changing HTTP routes require an API key. Read-only routes such as
+// /status and /health are intentionally left open for local diagnostics.
 bool requireApiKey() {
   if (hasValidApiKey()) {
     return true;
@@ -156,6 +165,8 @@ void handleStatusJson() {
   server.send(200, "application/json", buildStatusJson());
 }
 
+// /config reports configuration state without exposing secrets.
+// Passwords and API keys should never be returned by this endpoint.
 void handleConfigJson() {
   if (!requireApiKey()) {
     return;

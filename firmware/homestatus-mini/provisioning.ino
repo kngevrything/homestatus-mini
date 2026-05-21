@@ -1,3 +1,9 @@
+// First-time setup and provisioning mode.
+//
+// When no saved Wi-Fi configuration exists, or connection fails, the ESP32
+// starts a temporary setup access point and serves a local setup page for Wi-Fi,
+// device, API key, and MQTT settings.
+
 void startSetupMode() {
   setupModeActive = true;
 
@@ -7,6 +13,8 @@ void startSetupMode() {
   const char* setupSsid = "HomeStatus-Setup";
   const char* setupPassword = "homestatus";
 
+  // Use a less common private subnet for setup mode to avoid conflicts with
+  // typical home router addresses.
   Serial.println("Starting setup mode.");
   Serial.print("Setup SSID: ");
   Serial.println(setupSsid);
@@ -129,6 +137,8 @@ void handleSetupRoot() {
   server.send(200, "text/html", html);
 }
 
+// Setup credentials are stored in ESP32 Preferences. They are not encrypted,
+// so do not expose this device to untrusted physical access.
 void handleSetupSave() {
   if (!server.hasArg("wifiSSID") || !server.hasArg("apiKey")) {
     server.send(400, "text/plain", "Missing required setup fields.");

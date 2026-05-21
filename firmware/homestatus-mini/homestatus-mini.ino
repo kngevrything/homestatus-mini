@@ -1,3 +1,9 @@
+// HomeStatus Mini firmware entry point.
+//
+// Owns global configuration, shared state, setup(), and loop().
+// Feature code is split into focused Arduino tabs for display, Wi-Fi,
+// provisioning, HTTP, MQTT, status handling, and button behavior.
+
 #include <Wire.h>
 #include <WiFi.h>
 #include <WebServer.h>

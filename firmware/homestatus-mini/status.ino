@@ -1,3 +1,11 @@
+// Status state management.
+//
+// Centralizes status updates, text normalization, priority handling,
+// source-aware clearing, LED updates, OLED refresh, and MQTT status publishing.
+// All runtime status changes should flow through setStatus() or
+// setStatusWithPriority() so behavior stays consistent across HTTP, MQTT,
+// Serial, Home Assistant, and button input.
+
 void setupPins() {
   pinMode(BUTTON_PIN, INPUT_PULLUP);
 
@@ -277,6 +285,12 @@ int statusPriority(StatusLevel level) {
   return 0;
 }
 
+// Source-aware clear rules:
+//
+// - Empty incoming source means intentional global clear.
+// - Non-empty incoming source only clears if it matches currentStatus.source.
+// - This prevents one automation from accidentally clearing another automation's
+//   active alert.
 bool shouldAcceptClear(String incomingSource) {
   incomingSource.trim();
 
@@ -293,6 +307,11 @@ bool shouldAcceptClear(String incomingSource) {
   return incomingSource == currentStatus.source;
 }
 
+// Priority rules protect important alerts from lower-priority updates.
+//
+// alert / acked > warning > info > ok
+//
+// OK is handled separately by source-aware clear logic.
 bool shouldAcceptStatusUpdate(StatusLevel incomingLevel, StatusLevel currentLevel) {
   // OK is handled separately by source-aware clear logic.
   if (incomingLevel == STATUS_OK) {
