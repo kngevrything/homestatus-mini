@@ -234,6 +234,8 @@ docs/
 
 HomeStatus Mini is intended for trusted local networks.
 
+See [SECURITY.md](SECURITY.md) for the prototype security model, local-network assumptions, and credential storage notes.
+
 - State-changing HTTP routes require an API key.
 - `/status` and `/health` are readable without an API key.
 - `/config` requires an API key and does not expose secrets.
