@@ -96,12 +96,16 @@ void handleSetupRoot() {
 
   html += "<label>API Key</label>";
   html += "<input name=\"apiKey\" value=\"change-me\" required>";
+  html += "<p style=\"font-size:13px;color:#555;\">";
+  html += "Required for local HTTP control routes. Change this from the default.";
+  html += "</p>";
 
   html += "<h2>MQTT Settings</h2>";
   html += "<p style=\"font-size:13px;color:#555;\">";
   html +=
-      "Optional for now. These settings are saved but MQTT connection is not active until the next "
-      "firmware slice.";
+      "Optional. Required for Home Assistant discovery and MQTT control. "
+      "Leave disabled if you only want to use Serial or local HTTP control.";
+
   html += "</p>";
 
   html += "<label>";
