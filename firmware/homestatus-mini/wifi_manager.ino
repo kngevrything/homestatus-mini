@@ -25,8 +25,8 @@ void connectToWifi() {
 
   drawScreen("WIFI", "Connecting", ssid);
 
-  Serial.print("Connecting to Wi-Fi: ");
-  Serial.println(ssid);
+  DEBUG_PRINT("Connecting to Wi-Fi: ");
+  DEBUG_PRINTLN(ssid);
 
   switchToStationMode();
 
@@ -45,9 +45,9 @@ void connectToWifi() {
   if (WiFi.status() == WL_CONNECTED) {
     String ip = WiFi.localIP().toString();
 
-    Serial.println("Wi-Fi connected.");
-    Serial.print("IP address: ");
-    Serial.println(ip);
+    DEBUG_PRINTLN("Wi-Fi connected.");
+    DEBUG_PRINT("IP address: ");
+    DEBUG_PRINTLN(ip);
 
     drawScreen("WIFI", "Connected", ip);
     delay(2500);
@@ -105,11 +105,11 @@ void checkWifiConnection() {
     attempts++;
   }
 
-  Serial.println();
+  DEBUG_PRINTLN();
 
   if (WiFi.status() == WL_CONNECTED) {
-    Serial.print("Wi-Fi reconnected. IP address: ");
-    Serial.println(WiFi.localIP());
+    DEBUG_PRINT("Wi-Fi reconnected. IP address: ");
+    DEBUG_PRINTLN(WiFi.localIP());
 
     publishMqttStatus();
 

@@ -33,13 +33,13 @@ void setupMqtt() {
   mqttClient.setCallback(onMqttMessage);
   mqttClient.setBufferSize(1024);
 
-  Serial.println("MQTT configured.");
-  Serial.print("  Host: ");
-  Serial.println(deviceConfig.mqttHost);
-  Serial.print("  Port: ");
-  Serial.println(deviceConfig.mqttPort);
-  Serial.print("  Base topic: ");
-  Serial.println(deviceConfig.mqttBaseTopic);
+  DEBUG_PRINTLN("MQTT configured.");
+  DEBUG_PRINT("  Host: ");
+  DEBUG_PRINTLN(deviceConfig.mqttHost);
+  DEBUG_PRINT("  Port: ");
+  DEBUG_PRINTLN(deviceConfig.mqttPort);
+  DEBUG_PRINT("  Base topic: ");
+  DEBUG_PRINTLN(deviceConfig.mqttBaseTopic);
 }
 
 void handleMqtt() {
@@ -82,8 +82,8 @@ void reconnectMqttIfNeeded() {
   String actionTopic = mqttTopic("action");
   String levelSetTopic = mqttTopic("level/set");
 
-  Serial.print("Connecting to MQTT broker: ");
-  Serial.println(deviceConfig.mqttHost);
+  DEBUG_PRINT("Connecting to MQTT broker: ");
+  DEBUG_PRINTLN(deviceConfig.mqttHost);
 
   bool connected;
 
@@ -106,7 +106,7 @@ void reconnectMqttIfNeeded() {
     return;
   }
 
-  Serial.println("MQTT connected.");
+  DEBUG_PRINTLN("MQTT connected.");
 
   publishMqttAvailability("online");
   publishHomeAssistantDiscovery();
@@ -121,8 +121,8 @@ void reconnectMqttIfNeeded() {
 void onMqttMessage(char* topic, byte* payload, unsigned int length) {
   String topicText = String(topic);
 
-  Serial.print("MQTT message received on ");
-  Serial.println(topicText);
+  DEBUG_PRINT("MQTT message received on ");
+  DEBUG_PRINTLN(topicText);
 
   if (topicText == mqttTopic("level/set")) {
     String levelText = "";
@@ -155,7 +155,7 @@ void onMqttMessage(char* topic, byte* payload, unsigned int length) {
   }
 
   if (topicText != mqttTopic("set")) {
-    Serial.println("MQTT topic ignored.");
+    DEBUG_PRINTLN("MQTT topic ignored.");
     return;
   }
 
@@ -220,8 +220,8 @@ bool subscribeMqttTopic(String topic) {
   bool subscribed = mqttClient.subscribe(topic.c_str());
 
   if (subscribed) {
-    Serial.print("MQTT subscribed: ");
-    Serial.println(topic);
+    DEBUG_PRINT("MQTT subscribed: ");
+    DEBUG_PRINTLN(topic);
   } else {
     Serial.print("MQTT subscribe failed: ");
     Serial.println(topic);
@@ -317,7 +317,7 @@ void publishHomeAssistantDiscovery() {
                            mqttTopic("status"), "{{ value_json.level }}",
                            "mdi:format-list-bulleted");
 
-  Serial.println("Home Assistant discovery publish attempt complete.");
+  DEBUG_PRINTLN("Home Assistant discovery publish attempt complete.");
 }
 
 void publishHaButtonDiscovery(String objectId, String name, String commandTopic,
@@ -360,10 +360,10 @@ void publishHaButtonDiscovery(String objectId, String name, String commandTopic,
     Serial.print(" ");
     Serial.println(mqttStateToString(mqttClient.state()));
   } else {
-    Serial.print("HA button discovery published: ");
-    Serial.println(discoveryTopic);
-    Serial.print("HA button discovery payload size: ");
-    Serial.println(length);
+    DEBUG_PRINT("HA button discovery published: ");
+    DEBUG_PRINTLN(discoveryTopic);
+    DEBUG_PRINT("HA button discovery payload size: ");
+    DEBUG_PRINTLN(length);
   }
 }
 
@@ -416,10 +416,10 @@ void publishHaSensorDiscovery(String objectId, String name, String valueTemplate
     Serial.print(" ");
     Serial.println(mqttStateToString(mqttClient.state()));
   } else {
-    Serial.print("HA discovery published: ");
-    Serial.println(discoveryTopic);
-    Serial.print("HA discovery payload size: ");
-    Serial.println(length);
+    DEBUG_PRINT("HA discovery published: ");
+    DEBUG_PRINTLN(discoveryTopic);
+    DEBUG_PRINT("HA discovery payload size: ");
+    DEBUG_PRINTLN(length);
   }
 }
 
@@ -478,8 +478,8 @@ void handleMqttLevelSet(String levelText) {
   levelText.toLowerCase();
   levelText.trim();
 
-  Serial.print("MQTT level set received: ");
-  Serial.println(levelText);
+  DEBUG_PRINT("MQTT level set received: ");
+  DEBUG_PRINTLN(levelText);
 
   if (levelText == "ok") {
     clearStatusWithSource("");
@@ -559,9 +559,9 @@ void publishHaSelectDiscovery(String objectId, String name, String commandTopic,
     Serial.print(" ");
     Serial.println(mqttStateToString(mqttClient.state()));
   } else {
-    Serial.print("HA select discovery published: ");
-    Serial.println(discoveryTopic);
-    Serial.print("HA select discovery payload size: ");
-    Serial.println(length);
+    DEBUG_PRINT("HA select discovery published: ");
+    DEBUG_PRINTLN(discoveryTopic);
+    DEBUG_PRINT("HA select discovery payload size: ");
+    DEBUG_PRINTLN(length);
   }
 }

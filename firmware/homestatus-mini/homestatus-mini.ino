@@ -16,6 +16,19 @@
 #include <ArduinoJson.h>
 
 // -----------------------------------------------------------------------------
+// Logging and debugging
+// -----------------------------------------------------------------------------
+#define DEBUG_LOGS 1
+
+#if DEBUG_LOGS
+#define DEBUG_PRINT(x) Serial.print(x)
+#define DEBUG_PRINTLN(x) Serial.println(x)
+#else
+#define DEBUG_PRINT(x)
+#define DEBUG_PRINTLN(x)
+#endif
+
+// -----------------------------------------------------------------------------
 // Hardware configuration
 // -----------------------------------------------------------------------------
 
