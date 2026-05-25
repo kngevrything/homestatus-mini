@@ -23,6 +23,9 @@
 // encrypted, so do not expose this device to untrusted physical access. MQTT is optional and will
 // be skipped if not configured.
 
+constexpr size_t MQTT_STATUS_JSON_CAPACITY = 384;
+constexpr size_t MQTT_STATUS_BUFFER_SIZE = 384;
+
 void setupMqtt() {
   if (!hasMqttConfig()) {
     Serial.println("MQTT not configured. Skipping MQTT setup.");
@@ -199,11 +202,20 @@ void publishMqttStatus() {
     return;
   }
 
-  StaticJsonDocument<256> doc;
+  StaticJsonDocument<MQTT_STATUS_JSON_CAPACITY> doc;
 
   writeStatusJson(doc);
+  doc["ip"] = WiFi.localIP().toString();
 
-  char buffer[256];
+  char buffer[MQTT_STATUS_BUFFER_SIZE];
+
+  size_t needed = measureJson(doc);
+  if (needed >= sizeof(buffer)) {
+    Serial.print("MQTT status JSON too large. Needed: ");
+    Serial.println(needed + 1);
+    return;
+  }
+
   size_t length = serializeJson(doc, buffer, sizeof(buffer));
 
   String topic = mqttTopic("status");
@@ -295,20 +307,23 @@ void publishHomeAssistantDiscovery() {
 
   String baseObjectId = haSafeObjectId(getDeviceName());
 
+  publishHaSensorDiscovery(baseObjectId + "_ip", "IP Address", "{{ value_json.ip }}",
+                           "mdi:ip-network", "", "", "diagnostic");
+
   publishHaSensorDiscovery(baseObjectId + "_level", "Level", "{{ value_json.level }}",
-                           "mdi:alert-circle-outline", "", "");
+                           "mdi:alert-circle-outline", "", "", "");
 
   publishHaSensorDiscovery(baseObjectId + "_title", "Title", "{{ value_json.title }}",
-                           "mdi:format-title", "", "");
+                           "mdi:format-title", "", "", "");
 
   publishHaSensorDiscovery(baseObjectId + "_source", "Source", "{{ value_json.source }}",
-                           "mdi:source-branch", "", "");
+                           "mdi:source-branch", "", "", "");
 
   publishHaSensorDiscovery(baseObjectId + "_main", "Main", "{{ value_json.mainText }}",
-                           "mdi:text-short", "", "");
+                           "mdi:text-short", "", "", "");
 
   publishHaSensorDiscovery(baseObjectId + "_footer", "Footer", "{{ value_json.footer }}",
-                           "mdi:text", "", "");
+                           "mdi:text", "", "", "");
 
   publishHaButtonDiscovery(baseObjectId + "_acknowledge", "Acknowledge / Clear",
                            mqttTopic("action"), "{\"action\":\"ack\"}", "mdi:check-circle-outline");
@@ -366,9 +381,8 @@ void publishHaButtonDiscovery(String objectId, String name, String commandTopic,
     DEBUG_PRINTLN(length);
   }
 }
-
 void publishHaSensorDiscovery(String objectId, String name, String valueTemplate, String icon,
-                              String unitOfMeasurement, String deviceClass) {
+                              String unitOfMeasurement, String deviceClass, String entityCategory) {
   if (!isMqttReady()) {
     return;
   }
@@ -395,6 +409,10 @@ void publishHaSensorDiscovery(String objectId, String name, String valueTemplate
 
   if (deviceClass.length() > 0) {
     doc["device_class"] = deviceClass;
+  }
+
+  if (entityCategory.length() > 0) {
+    doc["entity_category"] = entityCategory;
   }
 
   JsonObject device = doc.createNestedObject("device");

@@ -288,7 +288,7 @@ void handleMqttLevelSet(String levelText);
 // ------------------------------------------------------------------------------
 void publishHomeAssistantDiscovery();
 void publishHaSensorDiscovery(String objectId, String name, String valueTemplate, String icon,
-                              String unitOfMeasurement);
+                              String unitOfMeasurement, String deviceClass, String entityCategory);
 
 void addHaDeviceInfo(JsonObject device);
 
