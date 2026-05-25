@@ -18,7 +18,7 @@
 // -----------------------------------------------------------------------------
 // Logging and debugging
 // -----------------------------------------------------------------------------
-#define DEBUG_LOGS 1
+#define DEBUG_LOGS 0
 
 #if DEBUG_LOGS
 #define DEBUG_PRINT(x) Serial.print(x)
@@ -78,6 +78,20 @@ unsigned long lastWifiCheckMs = 0;
 
 enum StatusLevel { STATUS_OK, STATUS_WARNING, STATUS_ALERT, STATUS_INFO, STATUS_ACKED };
 
+const int MAX_STATUS_SOURCES = 8;
+
+#define MANUAL_SOURCE "manual"
+
+struct SourceStatus {
+  bool active;
+  StatusLevel level;
+  String source;
+  String title;
+  String mainText;
+  String footer;
+  unsigned long updatedAt;
+};
+
 struct StatusScreen {
   StatusLevel level;
   String source;
@@ -130,8 +144,6 @@ Preferences preferences;
 
 DeviceConfig deviceConfig = {"", "", "homestatus-mini", "", false, "", 1883,
                              "", "", "homestatus-mini"};
-
-StatusScreen currentStatus = {STATUS_OK, "", "HOME", "All Good", "No alerts"};
 
 bool setupModeActive = false;
 bool lastButtonState = HIGH;
@@ -301,7 +313,8 @@ void setStatus(StatusLevel level, String source, String title, String mainText, 
 bool setStatusWithPriority(StatusLevel level, String source, String title, String mainText,
                            String footer);
 
-bool shouldAcceptClear(String incomingSource);
+int getStatusPriority(const String& level);
+
 bool clearStatusWithSource(String source);
 
 void setDefaultOk();
@@ -324,7 +337,6 @@ String statusLevelToString(StatusLevel level);
 
 bool setStatusWithPriority(StatusLevel level, String title, String mainText, String footer);
 int statusPriority(StatusLevel level);
-bool shouldAcceptStatusUpdate(StatusLevel incomingLevel, StatusLevel currentLevel);
 
 // -----------------------------------------------------------------------------
 // Encoding helpers

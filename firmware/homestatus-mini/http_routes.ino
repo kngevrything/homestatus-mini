@@ -103,6 +103,25 @@ void setupHttpRoutes() {
 }
 
 void handleRoot() {
+  const SourceStatus* selectedStatus = getSelectedStatus();
+
+  int activeCount = getActiveStatusCount();
+  int selectedPosition = getSelectedStatusPosition();
+
+  String visibleLevel = "ok";
+  String visibleSource = "";
+  String visibleTitle = "HOME";
+  String visibleMain = "All Good";
+  String visibleFooter = "No alerts";
+
+  if (selectedStatus != nullptr) {
+    visibleLevel = statusLevelToString(selectedStatus->level);
+    visibleSource = selectedStatus->source;
+    visibleTitle = selectedStatus->title;
+    visibleMain = selectedStatus->mainText;
+    visibleFooter = selectedStatus->footer;
+  }
+
   String html = "";
 
   html += "<!doctype html>";
@@ -112,47 +131,72 @@ void handleRoot() {
   html += "<title>HomeStatus Mini</title>";
   html += "<style>";
   html += "body{font-family:Arial,sans-serif;margin:24px;line-height:1.4;}";
-  html += "code{background:#eee;padding:2px 4px;border-radius:4px;}";
+  html += "code{background:#eee;padding:2px 4px;border-radius:4px;word-break:break-all;}";
   html +=
       "a{display:inline-block;margin:4px 8px 4px 0;padding:8px "
       "12px;background:#eee;border-radius:8px;text-decoration:none;color:#111;}";
-  html += ".card{border:1px solid #ddd;border-radius:12px;padding:16px;max-width:520px;}";
+  html += ".card{border:1px solid #ddd;border-radius:12px;padding:16px;max-width:560px;}";
+  html += ".muted{color:#555;font-size:14px;}";
   html += "</style>";
   html += "</head>";
   html += "<body>";
   html += "<div class=\"card\">";
+
   html += "<h1>HomeStatus Mini</h1>";
+
+  html += "<h2>Device</h2>";
   html += "<p><strong>Device:</strong> " + String(getDeviceName()) + "</p>";
-  html += "<p><strong>Level:</strong> " + statusLevelToString(currentStatus.level) + "</p>";
-  html += "<p><strong>Title:</strong> " + escapeHtml(currentStatus.title) + "</p>";
-  html += "<p><strong>Main:</strong> " + escapeHtml(currentStatus.mainText) + "</p>";
-  html += "<p><strong>Footer:</strong> " + escapeHtml(currentStatus.footer) + "</p>";
   html += "<p><strong>IP:</strong> " + WiFi.localIP().toString() + "</p>";
 
-  html += "<h2>Quick Actions</h2>";
-  html += "<p>State-changing routes require <code>?key=YOUR_API_KEY</code>.</p>";
-  html += "<code>/alert?key=YOUR_API_KEY</code><br>";
-  html += "<code>/clear?key=YOUR_API_KEY</code><br>";
+  html += "<h2>Status</h2>";
+  html += "<p><strong>Active Statuses:</strong> " + String(activeCount) + "</p>";
+
+  if (activeCount == 0) {
+    html += "<p><strong>Selected Position:</strong> none</p>";
+  } else {
+    html += "<p><strong>Selected Position:</strong> " + String(selectedPosition) + "/" +
+            String(activeCount) + "</p>";
+  }
+
+  html += "<p><strong>Worst Level:</strong> " + statusLevelToString(getWorstActiveLevel()) + "</p>";
+
+  html +=
+      "<p class=\"muted\">Visible status is what the OLED is showing. Worst level is what the RGB "
+      "LED is showing.</p>";
+
+  html += "<h2>Visible Status</h2>";
+  html += "<p><strong>Level:</strong> " + escapeHtml(visibleLevel) + "</p>";
+  html += "<p><strong>Source:</strong> " + escapeHtml(visibleSource) + "</p>";
+  html += "<p><strong>Title:</strong> " + escapeHtml(visibleTitle) + "</p>";
+  html += "<p><strong>Main:</strong> " + escapeHtml(visibleMain) + "</p>";
+  html += "<p><strong>Footer:</strong> " + escapeHtml(visibleFooter) + "</p>";
 
   html += "<h2>Read-Only Routes</h2>";
   html += "<a href=\"/status\">Status JSON</a>";
   html += "<a href=\"/health\">Health</a>";
 
-  html += "<h2>Quick Actions</h2>";
-  html += "<a href=\"/ok\">OK</a>";
-  html += "<a href=\"/warning\">Warning</a>";
-  html += "<a href=\"/alert\">Alert</a>";
-  html += "<a href=\"/info\">Info</a>";
-  html += "<a href=\"/clear\">Clear</a>";
+  html += "<h2>Protected Actions</h2>";
+  html += "<p>State-changing routes require <code>?key=YOUR_API_KEY</code>.</p>";
+  html += "<code>/ok?key=YOUR_API_KEY</code><br>";
+  html += "<code>/warning?key=YOUR_API_KEY</code><br>";
+  html += "<code>/alert?key=YOUR_API_KEY</code><br>";
+  html += "<code>/info?key=YOUR_API_KEY</code><br>";
+  html += "<code>/clear?key=YOUR_API_KEY</code><br>";
+  html += "<code>/reboot?key=YOUR_API_KEY</code><br>";
+  html += "<code>/config?key=YOUR_API_KEY</code><br>";
 
-  html += "<h2>Device</h2>";
-  html += "<a href=\"/status\">Status JSON</a>";
-  html += "<a href=\"/health\">Health</a>";
-  html += "<a href=\"/reboot\">Reboot</a>";
-  html += "<a href=\"/config?key=YOUR_API_KEY\">Config</a>";
   html += "<h2>Custom Set</h2>";
-  html += "<p>Example:</p>";
-  html += "<code>/set?level=alert&title=GARAGE&main=Open%20too%20long&footer=Alert%20active</code>";
+  html += "<p>Example with source:</p>";
+  html +=
+      "<code>/"
+      "set?key=YOUR_API_KEY&level=alert&source=garage&title=GARAGE&main=Open%20too%20long&footer="
+      "Check%20door</code>";
+
+  html += "<p>Source-specific clear:</p>";
+  html += "<code>/set?key=YOUR_API_KEY&level=ok&source=garage</code>";
+
+  html += "<p>Global clear:</p>";
+  html += "<code>/set?key=YOUR_API_KEY&level=ok</code>";
 
   html += "</div>";
   html += "</body>";
@@ -229,6 +273,16 @@ void handleConfigJson() {
 }
 
 void handleHealth() {
+  const SourceStatus* selectedStatus = getSelectedStatus();
+
+  String visibleLevel = "ok";
+  String visibleSource = "";
+
+  if (selectedStatus != nullptr) {
+    visibleLevel = statusLevelToString(selectedStatus->level);
+    visibleSource = selectedStatus->source;
+  }
+
   String json = "";
 
   json += "{";
@@ -237,6 +291,7 @@ void handleHealth() {
   json += "\"wifiConnected\":";
   json += WiFi.status() == WL_CONNECTED ? "true" : "false";
   json += ",";
+
   json += "\"mqttEnabled\":";
   json += deviceConfig.mqttEnabled ? "true" : "false";
   json += ",";
@@ -252,7 +307,17 @@ void handleHealth() {
   json += "\"homeAssistantDiscovery\":\"enabled\",";
   json += "\"wifiStatus\":\"" + wifiStatusToString(WiFi.status()) + "\",";
   json += "\"ip\":\"" + WiFi.localIP().toString() + "\",";
-  json += "\"level\":\"" + statusLevelToString(currentStatus.level) + "\",";
+
+  json += "\"level\":\"" + visibleLevel + "\",";
+  json += "\"source\":\"" + escapeJson(visibleSource) + "\",";
+  json += "\"activeCount\":";
+  json += String(getActiveStatusCount());
+  json += ",";
+  json += "\"selectedPosition\":";
+  json += String(getSelectedStatusPosition());
+  json += ",";
+  json += "\"worstLevel\":\"" + statusLevelToString(getWorstActiveLevel()) + "\",";
+
   json += "\"uptimeMs\":";
   json += String(millis());
   json += "}";

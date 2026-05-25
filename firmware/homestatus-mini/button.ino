@@ -1,7 +1,16 @@
 // Physical button handling.
 //
-// Short press mirrors the Home Assistant acknowledge/clear action.
+// Short press browses active statuses.
+// Double press acts on the status currently shown on the OLED.
 // Long press performs a factory reset and reboots into setup mode.
+//
+// Short press is intentionally non-destructive. Acknowledge and clear actions
+// require a double press and apply only to the selected visible status.
+
+const unsigned long BUTTON_DOUBLE_PRESS_MS = 350;
+
+int buttonClickCount = 0;
+unsigned long lastButtonReleaseMs = 0;
 
 void handleButton() {
   bool isPressed = digitalRead(BUTTON_PIN) == LOW;
@@ -27,7 +36,7 @@ void handleButton() {
       Serial.println(" ms");
 
       if (!longPressHandled) {
-        onButtonPressed();
+        registerButtonClick(now);
       }
     }
   }
@@ -39,6 +48,7 @@ void handleButton() {
     // feedback once the factory-reset threshold is reached.
     if (heldMs >= FACTORY_RESET_HOLD_MS) {
       longPressHandled = true;
+      buttonClickCount = 0;
 
       Serial.println("Factory reset long press detected.");
 
@@ -49,31 +59,52 @@ void handleButton() {
       factoryResetAndReboot();
     }
   }
+
+  handlePendingButtonClicks(now);
+}
+
+void registerButtonClick(unsigned long now) {
+  buttonClickCount++;
+  lastButtonReleaseMs = now;
+
+  if (buttonClickCount >= 2) {
+    buttonClickCount = 0;
+    onButtonDoublePressed();
+  }
+}
+
+void handlePendingButtonClicks(unsigned long now) {
+  if (buttonClickCount == 0) {
+    return;
+  }
+
+  if (now - lastButtonReleaseMs < BUTTON_DOUBLE_PRESS_MS) {
+    return;
+  }
+
+  if (buttonClickCount == 1) {
+    buttonClickCount = 0;
+    onButtonPressed();
+    return;
+  }
+
+  buttonClickCount = 0;
 }
 
 void onButtonPressed() {
-  if (currentStatus.level == STATUS_WARNING || currentStatus.level == STATUS_ALERT) {
-    currentStatus.level = STATUS_ACKED;
-    currentStatus.footer = "Acknowledged";
-
-    showStatus();
-    publishMqttStatus();
-
-    Serial.println("Alert acknowledged");
+  if (selectNextActiveStatus()) {
+    DEBUG_PRINTLN("Selected next active status");
     return;
   }
 
-  if (currentStatus.level == STATUS_INFO) {
-    clearStatusWithSource("");
-    Serial.println("Info cleared");
+  DEBUG_PRINTLN("No active status to browse");
+}
+
+void onButtonDoublePressed() {
+  if (actOnSelectedStatus()) {
+    DEBUG_PRINTLN("Acted on selected status");
     return;
   }
 
-  if (currentStatus.level == STATUS_ACKED) {
-    clearStatusWithSource("");
-    Serial.println("Acknowledged alert cleared");
-    return;
-  }
-
-  Serial.println("No active alert to acknowledge");
+  DEBUG_PRINTLN("No selected status action available");
 }
