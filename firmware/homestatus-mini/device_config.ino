@@ -143,7 +143,7 @@ String getApiKey() {
 }
 
 void saveMqttConfig(bool enabled, String host, int port, String username, String password,
-                    String baseTopic) {
+                    String baseTopic, bool updatePassword) {
   host.trim();
   username.trim();
   password.trim();
@@ -163,8 +163,11 @@ void saveMqttConfig(bool enabled, String host, int port, String username, String
   preferences.putString("mqttHost", host);
   preferences.putInt("mqttPort", port);
   preferences.putString("mqttUser", username);
-  preferences.putString("mqttPass", password);
   preferences.putString("mqttTopic", baseTopic);
+
+  if (updatePassword) {
+    preferences.putString("mqttPass", password);
+  }
 
   preferences.end();
 
@@ -172,8 +175,11 @@ void saveMqttConfig(bool enabled, String host, int port, String username, String
   deviceConfig.mqttHost = host;
   deviceConfig.mqttPort = port;
   deviceConfig.mqttUsername = username;
-  deviceConfig.mqttPassword = password;
   deviceConfig.mqttBaseTopic = baseTopic;
+
+  if (updatePassword) {
+    deviceConfig.mqttPassword = password;
+  }
 
   Serial.println("MQTT config saved.");
   Serial.print("  MQTT enabled: ");
@@ -186,4 +192,11 @@ void saveMqttConfig(bool enabled, String host, int port, String username, String
   Serial.println(deviceConfig.mqttPort);
   Serial.print("  MQTT base topic: ");
   Serial.println(deviceConfig.mqttBaseTopic);
+  Serial.print("  MQTT password updated: ");
+  Serial.println(updatePassword ? "Yes" : "No");
+}
+
+void saveMqttConfig(bool enabled, String host, int port, String username, String password,
+                    String baseTopic) {
+  saveMqttConfig(enabled, host, port, username, password, baseTopic, true);
 }

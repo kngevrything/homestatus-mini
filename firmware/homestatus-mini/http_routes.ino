@@ -44,6 +44,8 @@ void setupHttpRoutes() {
   server.on("/", HTTP_GET, handleRoot);
   server.on("/status", HTTP_GET, handleStatusJson);
   server.on("/config", HTTP_GET, handleConfigJson);
+  server.on("/mqtt", HTTP_GET, handleMqttSettingsPage);
+  server.on("/mqtt/save", HTTP_POST, handleMqttSettingsSave);
   server.on("/health", HTTP_GET, handleHealth);
   server.on("/reboot", HTTP_GET, handleReboot);
 
@@ -383,6 +385,152 @@ void handleSetFromHttp() {
   response += footer;
 
   server.send(accepted ? 200 : 409, "text/plain", response);
+}
+
+void handleMqttSettingsPage() {
+  if (!requireApiKey()) {
+    return;
+  }
+
+  String checked = deviceConfig.mqttEnabled ? " checked" : "";
+
+  String html = "";
+  html += "<!doctype html>";
+  html += "<html>";
+  html += "<head>";
+  html += "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">";
+  html += "<title>HomeStatus Mini MQTT Settings</title>";
+  html += "<style>";
+  html += "body{font-family:Arial,sans-serif;margin:24px;max-width:520px;}";
+  html += "label{display:block;margin-top:14px;font-weight:bold;}";
+  html += "input{width:100%;box-sizing:border-box;padding:8px;margin-top:4px;}";
+  html += "input[type=checkbox]{width:auto;}";
+  html += "button{margin-top:18px;padding:10px 14px;}";
+  html += ".note{font-size:13px;color:#555;line-height:1.4;}";
+  html += "</style>";
+  html += "</head>";
+  html += "<body>";
+
+  html += "<h1>MQTT Settings</h1>";
+  html += "<p class=\"note\">";
+  html += "Update MQTT settings without resetting Wi-Fi. ";
+  html += "Leave the password blank to keep the saved password.";
+  html += "</p>";
+
+  html += "<form method=\"POST\" action=\"/mqtt/save?key=";
+  html += escapeHtml(server.arg("key"));
+  html += "\">";
+
+  html += "<label>";
+  html += "<input name=\"mqttEnabled\" type=\"checkbox\" value=\"1\"";
+  html += checked;
+  html += "> MQTT enabled";
+  html += "</label>";
+
+  html += "<label>MQTT Host</label>";
+  html += "<input name=\"mqttHost\" value=\"";
+  html += escapeHtml(deviceConfig.mqttHost);
+  html += "\">";
+
+  html += "<label>MQTT Port</label>";
+  html += "<input name=\"mqttPort\" type=\"number\" min=\"1\" max=\"65535\" value=\"";
+  html += String(deviceConfig.mqttPort);
+  html += "\">";
+
+  html += "<label>MQTT Username</label>";
+  html += "<input name=\"mqttUsername\" value=\"";
+  html += escapeHtml(deviceConfig.mqttUsername);
+  html += "\">";
+
+  html += "<label>MQTT Password</label>";
+  html += "<input name=\"mqttPassword\" type=\"password\" ";
+  html += "placeholder=\"Leave blank to keep existing password\">";
+
+  html += "<label>MQTT Base Topic</label>";
+  html += "<input name=\"mqttBaseTopic\" value=\"";
+  html += escapeHtml(deviceConfig.mqttBaseTopic);
+  html += "\">";
+
+  html += "<button type=\"submit\">Save MQTT Settings</button>";
+  html += "</form>";
+
+  html += "<p class=\"note\">";
+  html += "Changing the base topic updates MQTT status, command, availability, and Home Assistant ";
+  html += "discovery topics. Old retained status messages may remain on the broker.";
+  html += "</p>";
+
+  html += "</body>";
+  html += "</html>";
+
+  server.send(200, "text/html", html);
+}
+
+void handleMqttSettingsSave() {
+  if (!requireApiKey()) {
+    return;
+  }
+
+  bool mqttEnabled = server.hasArg("mqttEnabled");
+
+  String mqttHost = server.arg("mqttHost");
+  String mqttPortText = server.arg("mqttPort");
+  String mqttUsername = server.arg("mqttUsername");
+  String mqttPassword = server.arg("mqttPassword");
+  String mqttBaseTopic = server.arg("mqttBaseTopic");
+
+  mqttHost.trim();
+  mqttPortText.trim();
+  mqttUsername.trim();
+  mqttPassword.trim();
+  mqttBaseTopic.trim();
+
+  int mqttPort = mqttPortText.toInt();
+
+  if (mqttEnabled && mqttHost.length() == 0) {
+    server.send(400, "text/html",
+                "<!doctype html><html><body>"
+                "<h1>MQTT Settings Not Saved</h1>"
+                "<p>MQTT host is required when MQTT is enabled.</p>"
+                "<p><a href=\"/mqtt?key=" +
+                    escapeHtml(server.arg("key")) +
+                    "\">Back to MQTT settings</a></p>"
+                    "</body></html>");
+    return;
+  }
+
+  bool updatePassword = mqttPassword.length() > 0;
+
+  disconnectMqttBeforeConfigChange();
+
+  saveMqttConfig(mqttEnabled, mqttHost, mqttPort, mqttUsername, mqttPassword, mqttBaseTopic,
+                 updatePassword);
+
+  restartMqttAfterConfigChange();
+
+  String html = "";
+  html += "<!doctype html>";
+  html += "<html>";
+  html += "<head>";
+  html += "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">";
+  html += "<title>MQTT Settings Saved</title>";
+  html += "</head>";
+  html += "<body>";
+  html += "<h1>MQTT Settings Saved</h1>";
+  html += "<p>MQTT settings were updated.</p>";
+
+  if (hasMqttConfig()) {
+    html += "<p>MQTT is configured. Reconnect and Home Assistant discovery were attempted.</p>";
+  } else {
+    html += "<p>MQTT is disabled or incomplete.</p>";
+  }
+
+  html += "<p><a href=\"/mqtt?key=";
+  html += escapeHtml(server.arg("key"));
+  html += "\">Back to MQTT settings</a></p>";
+  html += "</body>";
+  html += "</html>";
+
+  server.send(200, "text/html", html);
 }
 
 void sendPlain(String message) {

@@ -61,6 +61,37 @@ void handleMqtt() {
   }
 }
 
+void disconnectMqttBeforeConfigChange() {
+  if (!mqttClient.connected()) {
+    return;
+  }
+
+  publishMqttAvailability("offline");
+  mqttClient.disconnect();
+
+  Serial.println("MQTT disconnected for config change.");
+}
+
+void restartMqttAfterConfigChange() {
+  if (!hasMqttConfig()) {
+    Serial.println("MQTT not configured after config change.");
+    return;
+  }
+
+  if (WiFi.status() != WL_CONNECTED) {
+    Serial.println("Wi-Fi is not connected. MQTT restart skipped.");
+    return;
+  }
+
+  mqttClient.setServer(deviceConfig.mqttHost.c_str(), deviceConfig.mqttPort);
+  mqttClient.setCallback(onMqttMessage);
+  mqttClient.setBufferSize(1024);
+
+  lastMqttReconnectAttemptMs = millis() - MQTT_RECONNECT_INTERVAL_MS;
+
+  reconnectMqttIfNeeded();
+}
+
 // MQTT reconnect is non-blocking and throttled so the device remains responsive
 // when the broker is unavailable.
 void reconnectMqttIfNeeded() {
